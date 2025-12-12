@@ -1,12 +1,12 @@
-# Loom Pattern
+# Pattern
 
 MCP server providing hierarchical memory for AI agents.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Beta](https://img.shields.io/badge/Status-Beta-blue.svg)](https://github.com/mdlopresti/loom-pattern)
+[![Beta](https://img.shields.io/badge/Status-Beta-blue.svg)](https://github.com/loominal/pattern)
 
-> **Beta**: Core functionality tested and stable. Part of the [Loom](https://github.com/mdlopresti/loom) multi-agent infrastructure.
+> **Beta**: Core functionality tested and stable. Part of the [Loominal](https://github.com/loominal/loominal) multi-agent infrastructure.
 
 ## Overview
 
@@ -27,13 +27,13 @@ Pattern is a Model Context Protocol (MCP) server that provides hierarchical memo
 ### Installation
 
 ```bash
-npm install @loom/pattern
+npm install @loominal/pattern
 ```
 
 Or run directly:
 
 ```bash
-npx @loom/pattern
+npx @loominal/pattern
 ```
 
 ### Configuration
@@ -42,8 +42,8 @@ Set environment variables:
 
 ```bash
 export NATS_URL="nats://localhost:4222"      # NATS server URL
-export LOOM_PROJECT_ID="my-project"          # Project isolation key
-export LOOM_AGENT_ID="agent-123"             # Agent identity (optional)
+export LOOMINAL_PROJECT_ID="my-project"      # Project isolation key
+export LOOMINAL_AGENT_ID="agent-123"         # Agent identity (optional)
 export DEBUG="true"                          # Enable debug logging (optional)
 ```
 
@@ -66,10 +66,10 @@ Add to your Claude Code MCP settings (`~/.claude/settings.json`):
   "mcpServers": {
     "pattern": {
       "command": "npx",
-      "args": ["@loom/pattern"],
+      "args": ["@loominal/pattern"],
       "env": {
         "NATS_URL": "nats://localhost:4222",
-        "LOOM_PROJECT_ID": "my-project"
+        "LOOMINAL_PROJECT_ID": "my-project"
       }
     }
   }
@@ -244,8 +244,8 @@ export NATS_URL="wss://user:pass@nats.example.com"
 
 ```bash
 # Clone the repository
-git clone https://github.com/mdlopresti/loom-pattern.git
-cd loom-pattern
+git clone https://github.com/loominal/pattern.git
+cd pattern
 
 # Install dependencies
 npm install
@@ -296,10 +296,10 @@ flowchart TB
 
 ## Related
 
-- [Loom](https://github.com/mdlopresti/loom) — Multi-agent infrastructure
-- [Warp](https://github.com/mdlopresti/loom-warp) — MCP server for messaging
-- [Weft](https://github.com/mdlopresti/loom-weft) — Work coordinator
-- [Shuttle](https://github.com/mdlopresti/loom-shuttle) — Fleet management CLI
+- [Loominal](https://github.com/loominal/loominal) — Multi-agent infrastructure
+- [Warp](https://github.com/loominal/warp) — MCP server for messaging
+- [Weft](https://github.com/loominal/weft) — Work coordinator
+- [Shuttle](https://github.com/loominal/shuttle) — Fleet management CLI
 
 ## License
 

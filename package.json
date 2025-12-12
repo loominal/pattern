@@ -1,5 +1,5 @@
 {
-  "name": "@loom/pattern",
+  "name": "@loominal/pattern",
   "version": "0.1.0",
   "description": "MCP server for hierarchical agent memory",
   "type": "module",
@@ -21,7 +21,7 @@
     "prepublishOnly": "npm run build && npm run test"
   },
   "keywords": [
-    "loom",
+    "loominal",
     "pattern",
     "mcp",
     "nats",
@@ -36,11 +36,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mdlopresti/loom-pattern.git"
+    "url": "https://github.com/loominal/pattern.git"
   },
-  "homepage": "https://github.com/mdlopresti/loom-pattern#readme",
+  "homepage": "https://github.com/loominal/pattern#readme",
   "bugs": {
-    "url": "https://github.com/mdlopresti/loom-pattern/issues"
+    "url": "https://github.com/loominal/pattern/issues"
   },
   "engines": {
     "node": ">=18.0.0"

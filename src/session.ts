@@ -10,37 +10,37 @@ const logger = createLogger('session');
 
 /**
  * Get or create an agent ID from environment or generate a new one
- * Checks LOOM_AGENT_ID env var, or generates a new UUID
+ * Checks LOOMINAL_AGENT_ID env var, or generates a new UUID
  */
 export function getOrCreateAgentId(): string {
-  const envAgentId = process.env.LOOM_AGENT_ID;
+  const envAgentId = process.env.LOOMINAL_AGENT_ID;
 
   if (envAgentId) {
-    logger.debug('Using agent ID from LOOM_AGENT_ID environment variable', { agentId: envAgentId });
+    logger.debug('Using agent ID from LOOMINAL_AGENT_ID environment variable', { agentId: envAgentId });
     return envAgentId;
   }
 
   // Generate a new UUID for this agent
   const newAgentId = uuidv4();
   logger.info('Generated new agent ID', { agentId: newAgentId });
-  logger.warn('No LOOM_AGENT_ID set - generated ephemeral ID. Set LOOM_AGENT_ID to persist identity.');
+  logger.warn('No LOOMINAL_AGENT_ID set - generated ephemeral ID. Set LOOMINAL_AGENT_ID to persist identity.');
 
   return newAgentId;
 }
 
 /**
  * Get project ID from environment or return default
- * Checks LOOM_PROJECT_ID env var, or returns "default"
+ * Checks LOOMINAL_PROJECT_ID env var, or returns "default"
  */
 export function getProjectId(): string {
-  const envProjectId = process.env.LOOM_PROJECT_ID;
+  const envProjectId = process.env.LOOMINAL_PROJECT_ID;
 
   if (envProjectId) {
-    logger.debug('Using project ID from LOOM_PROJECT_ID environment variable', { projectId: envProjectId });
+    logger.debug('Using project ID from LOOMINAL_PROJECT_ID environment variable', { projectId: envProjectId });
     return envProjectId;
   }
 
-  logger.debug('No LOOM_PROJECT_ID set - using "default" project');
+  logger.debug('No LOOMINAL_PROJECT_ID set - using "default" project');
   return 'default';
 }
 

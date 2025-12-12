@@ -35,7 +35,7 @@ export function getVersionString(): string {
  */
 export function getHelpString(): string {
   return `
-Pattern MCP Server - Hierarchical agent memory for Loom
+Pattern MCP Server - Hierarchical agent memory for Loominal
 
 USAGE:
   pattern [OPTIONS]
@@ -45,12 +45,12 @@ OPTIONS:
   --help, -h       Show this help message
 
 ENVIRONMENT VARIABLES:
-  NATS_URL            NATS server URL (default: nats://localhost:4222)
-  NATS_USER           NATS username (optional)
-  NATS_PASS           NATS password (optional)
-  LOOM_PROJECT_ID     Project ID for memory isolation (default: "default")
-  LOOM_AGENT_ID       Agent ID for identity tracking (generated if not set)
-  DEBUG               Enable debug logging (default: false)
+  NATS_URL              NATS server URL (default: nats://localhost:4222)
+  NATS_USER             NATS username (optional)
+  NATS_PASS             NATS password (optional)
+  LOOMINAL_PROJECT_ID   Project ID for memory isolation (default: "default")
+  LOOMINAL_AGENT_ID     Agent ID for identity tracking (generated if not set)
+  DEBUG                 Enable debug logging (default: false)
 
 EXAMPLES:
   # Start with default settings
@@ -60,9 +60,9 @@ EXAMPLES:
   NATS_URL=nats://my-nats:4222 pattern
 
   # Start with specific project and agent
-  LOOM_PROJECT_ID=my-project LOOM_AGENT_ID=agent-123 pattern
+  LOOMINAL_PROJECT_ID=my-project LOOMINAL_AGENT_ID=agent-123 pattern
 
-For more information, visit: https://github.com/mdlopresti/loom-pattern
+For more information, visit: https://github.com/loominal/pattern
 `;
 }
 
