@@ -1,0 +1,73 @@
+{
+  "name": "@loom/pattern",
+  "version": "0.1.0",
+  "description": "MCP server for hierarchical agent memory",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "pattern": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "loom",
+    "pattern",
+    "mcp",
+    "nats",
+    "memory",
+    "agent",
+    "claude",
+    "ai",
+    "hierarchical-memory",
+    "multi-agent"
+  ],
+  "author": "Michael LoPresti <mike@lopresti.org>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mdlopresti/loom-pattern.git"
+  },
+  "homepage": "https://github.com/mdlopresti/loom-pattern#readme",
+  "bugs": {
+    "url": "https://github.com/mdlopresti/loom-pattern/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "nats": "^2.28.2",
+    "nats.ws": "^1.30.3",
+    "uuid": "^11.0.3",
+    "ws": "^8.18.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.13",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
