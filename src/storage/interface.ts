@@ -62,6 +62,38 @@ export interface StorageBackend {
    * Check if backend is connected
    */
   isConnected(): boolean;
+
+  /**
+   * Get a memory by key from a specific project
+   * @param key - Storage key
+   * @param projectId - Project identifier
+   * @returns Memory object or null if not found
+   */
+  getFromProject(key: string, projectId: string): Promise<Memory | null>;
+
+  /**
+   * Delete a memory by key from a specific project
+   * @param key - Storage key
+   * @param projectId - Project identifier
+   * @returns true if deleted, false if not found
+   */
+  deleteFromProject(key: string, projectId: string): Promise<boolean>;
+
+  /**
+   * List all memories matching a prefix from a specific project
+   * @param prefix - Key prefix to filter by
+   * @param projectId - Project identifier
+   * @returns Array of Memory objects
+   */
+  listFromProject(prefix: string, projectId: string): Promise<Memory[]>;
+
+  /**
+   * List all keys matching a prefix from a specific project
+   * @param prefix - Key prefix to filter by
+   * @param projectId - Project identifier
+   * @returns Array of key strings
+   */
+  keysFromProject(prefix: string, projectId: string): Promise<string[]>;
 }
 
 /**
