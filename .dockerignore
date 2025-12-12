@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Build output (we rebuild in Docker)
+dist
+
+# Test files
+*.test.ts
+coverage
+.nyc_output
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.md
+!README.md
+*.log
+.env*

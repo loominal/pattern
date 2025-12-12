@@ -1,0 +1,32 @@
+# Source files (dist is published)
+src/
+
+# Test files
+*.test.ts
+coverage/
+.nyc_output/
+
+# Config files
+tsconfig.json
+vitest.config.ts
+eslint.config.js
+.prettierrc
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# GitHub
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.log
+.env*
