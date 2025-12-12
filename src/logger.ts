@@ -62,7 +62,7 @@ export const logger = new Logger();
  * Create a named logger instance (for component-specific logging)
  * For now, just returns the global logger with a prefix
  */
-export function createLogger(component: string): Logger {
+export function createLogger(_component: string): Logger {
   // For simplicity, we return the same logger instance
   // In the future, this could create separate instances with component prefixes
   return logger;

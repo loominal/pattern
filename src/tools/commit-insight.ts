@@ -5,7 +5,7 @@
 
 import type { NatsKvBackend } from '../storage/nats-kv.js';
 import { PatternError, PatternErrorCode } from '../types.js';
-import { buildKey, parseKey } from '../storage/interface.js';
+import { buildKey } from '../storage/interface.js';
 
 export interface CommitInsightInput {
   memoryId: string;

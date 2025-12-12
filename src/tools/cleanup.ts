@@ -4,7 +4,7 @@
  */
 
 import type { Memory } from '../types.js';
-import { PatternError, PatternErrorCode } from '../types.js';
+// PatternError and PatternErrorCode available if needed for future error handling
 import type { NatsKvBackend } from '../storage/nats-kv.js';
 import { createLogger } from '../logger.js';
 

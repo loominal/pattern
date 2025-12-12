@@ -13,29 +13,28 @@ import { PatternServer } from './server.js';
 /**
  * Parse command line arguments
  */
-function parseArgs(): { showVersion: boolean; showHelp: boolean } {
-  const args = process.argv.slice(2);
+export function parseArgs(argv: string[] = process.argv.slice(2)): {
+  showVersion: boolean;
+  showHelp: boolean;
+} {
   return {
-    showVersion: args.includes('--version') || args.includes('-v'),
-    showHelp: args.includes('--help') || args.includes('-h'),
+    showVersion: argv.includes('--version') || argv.includes('-v'),
+    showHelp: argv.includes('--help') || argv.includes('-h'),
   };
 }
 
 /**
- * Show version information
+ * Get version string
  */
-function showVersion(): void {
-  // eslint-disable-next-line no-console
-  console.log('Pattern MCP Server v0.1.0');
-  process.exit(0);
+export function getVersionString(): string {
+  return 'Pattern MCP Server v0.1.0';
 }
 
 /**
- * Show help information
+ * Get help string
  */
-function showHelp(): void {
-  // eslint-disable-next-line no-console
-  console.log(`
+export function getHelpString(): string {
+  return `
 Pattern MCP Server - Hierarchical agent memory for Loom
 
 USAGE:
@@ -64,7 +63,24 @@ EXAMPLES:
   LOOM_PROJECT_ID=my-project LOOM_AGENT_ID=agent-123 pattern
 
 For more information, visit: https://github.com/mdlopresti/loom-pattern
-`);
+`;
+}
+
+/**
+ * Show version information
+ */
+function showVersion(): void {
+  // eslint-disable-next-line no-console
+  console.log(getVersionString());
+  process.exit(0);
+}
+
+/**
+ * Show help information
+ */
+function showHelp(): void {
+  // eslint-disable-next-line no-console
+  console.log(getHelpString());
   process.exit(0);
 }
 
@@ -132,4 +148,9 @@ async function main() {
   }
 }
 
-main();
+// Only run main() when executed directly, not when imported
+// Check if this file is the main module
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  main();
+}

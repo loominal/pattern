@@ -8,7 +8,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'dist/', '**/*.test.ts', 'vitest.config.ts'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        '**/*.test.ts',
+        'vitest.config.ts',
+        'eslint.config.js',
+        'src/index.ts', // CLI entry point with process.exit() calls
+      ],
       thresholds: {
         lines: 90,
         functions: 90,
