@@ -265,23 +265,24 @@ npm run format
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐
-│   Claude Code   │     │   Other Agent   │
-│   (MCP Client)  │     │   (MCP Client)  │
-└────────┬────────┘     └────────┬────────┘
-         │                       │
-         └───────────┬───────────┘
-                     │
-              ┌──────▼──────┐
-              │   Pattern   │  MCP Server
-              │  (Memory)   │  - Tools, Session
-              └──────┬──────┘
-                     │
-              ┌──────▼──────┐
-              │  NATS KV    │  Storage Backend
-              │ (JetStream) │  - Persistence
-              └─────────────┘
+```mermaid
+flowchart TB
+    subgraph Clients["MCP Clients"]
+        CC["Claude Code"]
+        OA["Other Agent"]
+    end
+
+    subgraph Server["MCP Server"]
+        Pattern["Pattern<br/>(Memory)"]
+    end
+
+    subgraph Storage["Storage Backend"]
+        NATS["NATS KV<br/>(JetStream)"]
+    end
+
+    CC <--> Pattern
+    OA <--> Pattern
+    Pattern <--> NATS
 ```
 
 ## Key Design Decisions
