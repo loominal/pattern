@@ -2,9 +2,11 @@
 
 MCP server providing hierarchical memory for AI agents.
 
-[![Tests](https://github.com/mdlopresti/loom-pattern/actions/workflows/ci.yml/badge.svg)](https://github.com/mdlopresti/loom-pattern/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)](https://github.com/mdlopresti/loom-pattern)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Beta](https://img.shields.io/badge/Status-Beta-blue.svg)](https://github.com/mdlopresti/loom-pattern)
+
+> **Beta**: Core functionality tested and stable. Part of the [Loom](https://github.com/mdlopresti/loom) multi-agent infrastructure.
 
 ## Overview
 
@@ -292,11 +294,12 @@ flowchart TB
 - **TTL Management**: Application-level expiration (NATS KV doesn't support per-key TTL)
 - **Summary Generation**: 4KB max summary from prioritized memories
 
-## Related Projects
+## Related
 
-- [Loom Warp](https://github.com/mdlopresti/loom-warp) - MCP server for agent communication
-- [Loom Weft](https://github.com/mdlopresti/loom-weft) - Coordinator service for work routing
-- [Loom Shuttle](https://github.com/mdlopresti/loom-shuttle) - CLI for fleet management
+- [Loom](https://github.com/mdlopresti/loom) — Multi-agent infrastructure
+- [Warp](https://github.com/mdlopresti/loom-warp) — MCP server for messaging
+- [Weft](https://github.com/mdlopresti/loom-weft) — Work coordinator
+- [Shuttle](https://github.com/mdlopresti/loom-shuttle) — Fleet management CLI
 
 ## License
 
