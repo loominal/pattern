@@ -36,10 +36,7 @@ export async function forget(
 ): Promise<ForgetOutput> {
   // Validate input
   if (!input.memoryId || input.memoryId.trim() === '') {
-    throw new PatternError(
-      PatternErrorCode.VALIDATION_ERROR,
-      'Memory ID cannot be empty'
-    );
+    throw new PatternError(PatternErrorCode.VALIDATION_ERROR, 'Memory ID cannot be empty');
   }
 
   // Search for the memory in all categories

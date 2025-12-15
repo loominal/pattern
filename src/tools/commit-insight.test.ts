@@ -222,13 +222,11 @@ describe('commit-insight tool', () => {
         memoryId: '',
       };
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: 'Memory ID cannot be empty',
       });
@@ -239,13 +237,11 @@ describe('commit-insight tool', () => {
         memoryId: '   ',
       };
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
       });
     });
@@ -260,15 +256,13 @@ describe('commit-insight tool', () => {
         memoryId,
       };
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.MEMORY_NOT_FOUND,
-        message: expect.stringContaining('not found in \'recent\' or \'tasks\' categories'),
+        message: expect.stringContaining("not found in 'recent' or 'tasks' categories"),
         details: { memoryId },
       });
 
@@ -297,18 +291,15 @@ describe('commit-insight tool', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject)
-        .mockResolvedValue(longtermMemory);
+      vi.mocked(mockStorage.getFromProject).mockResolvedValue(longtermMemory);
 
       const input: CommitInsightInput = {
         memoryId,
       };
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
-        message: expect.stringContaining('already in \'longterm\' category'),
+        message: expect.stringContaining("already in 'longterm' category"),
         details: {
           memoryId,
           category: 'longterm',
@@ -330,16 +321,13 @@ describe('commit-insight tool', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject)
-        .mockResolvedValue(coreMemory);
+      vi.mocked(mockStorage.getFromProject).mockResolvedValue(coreMemory);
 
       const input: CommitInsightInput = {
         memoryId,
       };
 
-      await expect(
-        commitInsight(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(commitInsight(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.CORE_PROTECTED,
         message: expect.stringContaining('core'),
         details: {

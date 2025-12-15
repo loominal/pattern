@@ -41,8 +41,7 @@ describe('forget tool', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject)
-        .mockResolvedValueOnce(recentMemory);
+      vi.mocked(mockStorage.getFromProject).mockResolvedValueOnce(recentMemory);
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
       const input: ForgetInput = {
@@ -288,13 +287,9 @@ describe('forget tool', () => {
         memoryId: '',
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toThrow(PatternError);
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: 'Memory ID cannot be empty',
       });
@@ -305,13 +300,9 @@ describe('forget tool', () => {
         memoryId: '   ',
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toThrow(PatternError);
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
       });
     });
@@ -326,9 +317,7 @@ describe('forget tool', () => {
         memoryId,
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.MEMORY_NOT_FOUND,
         message: expect.stringContaining('not found'),
         details: { memoryId },
@@ -365,9 +354,7 @@ describe('forget tool', () => {
         force: false,
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.CORE_PROTECTED,
         message: expect.stringContaining('force=true'),
         details: {
@@ -405,9 +392,7 @@ describe('forget tool', () => {
         // force is undefined
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.CORE_PROTECTED,
       });
 
@@ -442,9 +427,7 @@ describe('forget tool', () => {
         memoryId,
       };
 
-      await expect(
-        forget(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(forget(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.ACCESS_DENIED,
         message: expect.stringContaining('another agent'),
         details: {
@@ -507,8 +490,7 @@ describe('forget tool', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject)
-        .mockResolvedValueOnce(recentMemory);
+      vi.mocked(mockStorage.getFromProject).mockResolvedValueOnce(recentMemory);
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(false);
 
       const input: ForgetInput = {
@@ -592,8 +574,7 @@ describe('forget tool', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject)
-        .mockResolvedValueOnce(recentMemory);
+      vi.mocked(mockStorage.getFromProject).mockResolvedValueOnce(recentMemory);
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
       const input: ForgetInput = {

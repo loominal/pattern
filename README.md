@@ -16,6 +16,31 @@ Pattern is a Model Context Protocol (MCP) server that provides hierarchical memo
 - **Share** learnings with other agents in the same project
 - **Recall** context efficiently at session startup
 - **Isolate** memories by project and agent for security
+- **Unified identity** with Warp for consistent agent identification
+
+## Agent Identity
+
+Pattern v0.2.0 integrates with Warp's unified identity system. Instead of generating ephemeral IDs, Pattern reads agent identity from Warp's NATS KV store.
+
+### How It Works
+
+1. **Warp initializes identity** at startup, storing it in NATS KV bucket `loom-identity-{projectId}`
+2. **Pattern loads identity** with retry logic (10 attempts, ~5.5s total wait time)
+3. **Same agent, same memories**: Restart Claude Code and your memories persist
+
+### Multi-Machine Scenarios
+
+For agents running on multiple machines that should share the same identity and memories, set `LOOMINAL_AGENT_ID` in Warp's configuration to override the automatic ID derivation.
+
+### Sub-Agent Memory Access
+
+Sub-agents (spawned by root agents for specialized tasks) can access their parent's memories:
+
+| Parent Memory Type | Sub-Agent Access |
+|-------------------|------------------|
+| `recent`, `tasks`, `longterm` | Read access |
+| `core` | No access (identity-defining, protected) |
+| `shared` | Full read/write |
 
 ## Quick Start
 
@@ -41,10 +66,10 @@ npx @loominal/pattern
 Set environment variables:
 
 ```bash
-export NATS_URL="nats://localhost:4222"      # NATS server URL
-export LOOMINAL_PROJECT_ID="my-project"      # Project isolation key
-export LOOMINAL_AGENT_ID="agent-123"         # Agent identity (optional)
-export DEBUG="true"                          # Enable debug logging (optional)
+export NATS_URL="nats://localhost:4222"         # NATS server URL
+export LOOMINAL_PROJECT_ID="my-project"         # Project isolation key (optional, derived from path)
+export LOOMINAL_SUBAGENT_TYPE="specialized"     # Set by parent agent when spawning sub-agents
+export DEBUG="true"                             # Enable debug logging (optional)
 ```
 
 ### Running
@@ -289,6 +314,7 @@ flowchart TB
 
 ## Key Design Decisions
 
+- **Unified Identity**: Pattern reads identity from Warp's NATS KV store instead of generating ephemeral UUIDs. Same computer + same folder = same agent across restarts.
 - **Project Isolation**: Each project gets its own NATS KV bucket
 - **Agent Privacy**: Private memories keyed by agentId, never visible to others
 - **TTL Management**: Application-level expiration (NATS KV doesn't support per-key TTL)

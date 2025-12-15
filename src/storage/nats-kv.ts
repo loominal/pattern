@@ -487,11 +487,10 @@ export class NatsKvBackend implements StorageBackend {
         projectId,
         error: error.message,
       });
-      throw new PatternError(
-        PatternErrorCode.NATS_ERROR,
-        `Failed to list keys: ${error.message}`,
-        { prefix, projectId }
-      );
+      throw new PatternError(PatternErrorCode.NATS_ERROR, `Failed to list keys: ${error.message}`, {
+        prefix,
+        projectId,
+      });
     }
   }
 }

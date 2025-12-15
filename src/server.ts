@@ -5,10 +5,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import type { PatternConfig } from './types.js';
 import { NatsKvBackend } from './storage/nats-kv.js';
 import type { AgentSession } from './session.js';
@@ -120,11 +117,27 @@ export class PatternServer {
         }
 
         // Dispatch to tool handlers
-        const result = await handleToolCall(name, args ?? {}, {
+        const toolContext: {
+          agentId: string;
+          projectId: string;
+          storage: NatsKvBackend;
+          isSubagent?: boolean;
+          parentId?: string;
+        } = {
           agentId: this.session.agentId,
           projectId: this.session.projectId,
           storage: this.storage,
-        });
+        };
+
+        // Add sub-agent info if applicable
+        if (this.session.isSubagent) {
+          toolContext.isSubagent = true;
+          if (this.session.parentId) {
+            toolContext.parentId = this.session.parentId;
+          }
+        }
+
+        const result = await handleToolCall(name, args ?? {}, toolContext);
 
         return {
           content: [

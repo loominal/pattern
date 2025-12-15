@@ -51,9 +51,7 @@ describe('Storage Helper Functions', () => {
     });
 
     it('should throw on invalid private key format', () => {
-      expect(() => parseKey('agents/agent-123/tasks')).toThrow(
-        'Invalid private key format'
-      );
+      expect(() => parseKey('agents/agent-123/tasks')).toThrow('Invalid private key format');
     });
 
     it('should throw on completely invalid key', () => {
@@ -65,9 +63,7 @@ describe('Storage Helper Functions', () => {
     });
 
     it('should throw on empty parts in private key', () => {
-      expect(() => parseKey('agents//tasks/mem-789')).toThrow(
-        'Invalid private key format'
-      );
+      expect(() => parseKey('agents//tasks/mem-789')).toThrow('Invalid private key format');
     });
   });
 });
@@ -339,35 +335,27 @@ describe('NatsKvBackend Integration', () => {
       const uninitializedProject = `test-uninitialized-${Date.now()}`;
       const key = buildKey(agentId, 'recent', 'test', 'private');
 
-      await expect(
-        backend.getFromProject(key, uninitializedProject)
-      ).rejects.toThrow('Bucket not initialized');
+      await expect(backend.getFromProject(key, uninitializedProject)).rejects.toThrow(
+        'Bucket not initialized'
+      );
     });
 
     it('should throw validation error for get() without project context', async () => {
       const key = buildKey(agentId, 'recent', 'test', 'private');
-      await expect(backend.get(key)).rejects.toThrow(
-        'get() requires projectId context'
-      );
+      await expect(backend.get(key)).rejects.toThrow('get() requires projectId context');
     });
 
     it('should throw validation error for delete() without project context', async () => {
       const key = buildKey(agentId, 'recent', 'test', 'private');
-      await expect(backend.delete(key)).rejects.toThrow(
-        'delete() requires projectId context'
-      );
+      await expect(backend.delete(key)).rejects.toThrow('delete() requires projectId context');
     });
 
     it('should throw validation error for list() without project context', async () => {
-      await expect(backend.list('agents/')).rejects.toThrow(
-        'list() requires projectId context'
-      );
+      await expect(backend.list('agents/')).rejects.toThrow('list() requires projectId context');
     });
 
     it('should throw validation error for keys() without project context', async () => {
-      await expect(backend.keys('agents/')).rejects.toThrow(
-        'keys() requires projectId context'
-      );
+      await expect(backend.keys('agents/')).rejects.toThrow('keys() requires projectId context');
     });
   });
 });

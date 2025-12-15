@@ -38,10 +38,7 @@ export async function coreMemory(
 ): Promise<CoreMemoryOutput> {
   // Validate input
   if (!input.content || input.content.trim() === '') {
-    throw new PatternError(
-      PatternErrorCode.VALIDATION_ERROR,
-      'Content cannot be empty'
-    );
+    throw new PatternError(PatternErrorCode.VALIDATION_ERROR, 'Content cannot be empty');
   }
 
   // Check content size
@@ -65,7 +62,7 @@ export async function coreMemory(
       {
         currentCount: existingCoreMemories.length,
         maxCount: MAX_CORE_MEMORIES,
-        agentId
+        agentId,
       }
     );
   }

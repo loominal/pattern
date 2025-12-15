@@ -50,7 +50,9 @@ describe('remember-learning tool', () => {
       const result = await rememberLearning(input, storage, projectId, agentId);
 
       expect(result.memoryId).toBeDefined();
-      expect(result.memoryId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i); // UUID v4 format
+      expect(result.memoryId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      ); // UUID v4 format
       expect(result.expiresAt).toBeDefined(); // recent category has 24h TTL
 
       expect(storage.set).toHaveBeenCalledTimes(1);

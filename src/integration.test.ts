@@ -249,9 +249,7 @@ describe('Multi-Agent Integration Tests', () => {
         categories: ['learnings'],
       });
 
-      const found = agent2Context.shared.find(
-        (m) => m.id === shareResult.sharedMemoryId
-      );
+      const found = agent2Context.shared.find((m) => m.id === shareResult.sharedMemoryId);
       expect(found).toBeDefined();
       expect(found?.content).toBe('Private insight to share');
     });
@@ -433,12 +431,7 @@ describe('Non-Functional Tests', () => {
   describe('NF-AC-5: Meaningful error messages', () => {
     it('should provide clear error for non-existent memory forget', async () => {
       try {
-        await forget(
-          { memoryId: 'non-existent-memory-id' },
-          storage,
-          projectId,
-          agentId
-        );
+        await forget({ memoryId: 'non-existent-memory-id' }, storage, projectId, agentId);
         expect.fail('Should have thrown');
       } catch (error: unknown) {
         const err = error as Error;

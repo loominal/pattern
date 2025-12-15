@@ -1,126 +1,22 @@
 /**
- * Tests for AgentSession class and session utilities
+ * Tests for AgentSession class
+ * Tests for v0.2.0 unified identity management
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getOrCreateAgentId, getProjectId, AgentSession } from './session.js';
-
-describe('getOrCreateAgentId', () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    // Reset process.env to a clean state before each test
-    vi.resetModules();
-    process.env = { ...originalEnv };
-  });
-
-  afterEach(() => {
-    // Restore original environment after each test
-    process.env = originalEnv;
-  });
-
-  it('should return agent ID from LOOMINAL_AGENT_ID environment variable when set', () => {
-    const testAgentId = 'test-agent-123';
-    process.env.LOOMINAL_AGENT_ID = testAgentId;
-
-    const agentId = getOrCreateAgentId();
-
-    expect(agentId).toBe(testAgentId);
-  });
-
-  it('should generate a new UUID when LOOMINAL_AGENT_ID is not set', () => {
-    delete process.env.LOOMINAL_AGENT_ID;
-
-    const agentId = getOrCreateAgentId();
-
-    // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    expect(agentId).toMatch(uuidRegex);
-  });
-
-  it('should generate different UUIDs on subsequent calls when LOOMINAL_AGENT_ID is not set', () => {
-    delete process.env.LOOMINAL_AGENT_ID;
-
-    const agentId1 = getOrCreateAgentId();
-    const agentId2 = getOrCreateAgentId();
-
-    expect(agentId1).not.toBe(agentId2);
-  });
-
-  it('should handle empty string in LOOMINAL_AGENT_ID as falsy', () => {
-    process.env.LOOMINAL_AGENT_ID = '';
-
-    const agentId = getOrCreateAgentId();
-
-    // Empty string is falsy, so it should generate a new UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    expect(agentId).toMatch(uuidRegex);
-  });
-});
-
-describe('getProjectId', () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    vi.resetModules();
-    process.env = { ...originalEnv };
-  });
-
-  afterEach(() => {
-    process.env = originalEnv;
-  });
-
-  it('should return project ID from LOOMINAL_PROJECT_ID environment variable when set', () => {
-    const testProjectId = 'my-awesome-project';
-    process.env.LOOMINAL_PROJECT_ID = testProjectId;
-
-    const projectId = getProjectId();
-
-    expect(projectId).toBe(testProjectId);
-  });
-
-  it('should return "default" when LOOMINAL_PROJECT_ID is not set', () => {
-    delete process.env.LOOMINAL_PROJECT_ID;
-
-    const projectId = getProjectId();
-
-    expect(projectId).toBe('default');
-  });
-
-  it('should return "default" when LOOMINAL_PROJECT_ID is empty string', () => {
-    process.env.LOOMINAL_PROJECT_ID = '';
-
-    const projectId = getProjectId();
-
-    expect(projectId).toBe('default');
-  });
-
-  it('should handle special characters in project ID', () => {
-    const specialProjectId = 'project-2024_test.123';
-    process.env.LOOMINAL_PROJECT_ID = specialProjectId;
-
-    const projectId = getProjectId();
-
-    expect(projectId).toBe(specialProjectId);
-  });
-});
+import { AgentSession } from './session.js';
 
 describe('AgentSession', () => {
-  const originalEnv = process.env;
-
   beforeEach(() => {
-    vi.resetModules();
-    process.env = { ...originalEnv };
     // Use fake timers for consistent time-based testing
     vi.useFakeTimers();
   });
 
   afterEach(() => {
-    process.env = originalEnv;
     vi.useRealTimers();
   });
 
-  describe('Constructor', () => {
+  describe('Constructor - Root Agent', () => {
     it('should initialize with provided agentId and projectId', () => {
       const agentId = 'test-agent-456';
       const projectId = 'test-project-789';
@@ -129,47 +25,33 @@ describe('AgentSession', () => {
 
       expect(session.agentId).toBe(agentId);
       expect(session.projectId).toBe(projectId);
+      expect(session.isSubagent).toBe(false);
+      expect(session.parentId).toBeUndefined();
       expect(session.sessionStart).toBeInstanceOf(Date);
     });
 
-    it('should use getOrCreateAgentId when agentId is not provided', () => {
-      const testAgentId = 'env-agent-id';
-      process.env.LOOMINAL_AGENT_ID = testAgentId;
-
-      const session = new AgentSession(undefined, 'test-project');
-
-      expect(session.agentId).toBe(testAgentId);
+    it('should throw when agentId is empty string', () => {
+      expect(() => {
+        new AgentSession('', 'test-project');
+      }).toThrow('agentId is required and cannot be empty');
     });
 
-    it('should use getProjectId when projectId is not provided', () => {
-      const testProjectId = 'env-project-id';
-      process.env.LOOMINAL_PROJECT_ID = testProjectId;
-
-      const session = new AgentSession('test-agent');
-
-      expect(session.projectId).toBe(testProjectId);
+    it('should throw when agentId is whitespace only', () => {
+      expect(() => {
+        new AgentSession('   ', 'test-project');
+      }).toThrow('agentId is required and cannot be empty');
     });
 
-    it('should use defaults from environment when both params are undefined', () => {
-      process.env.LOOMINAL_AGENT_ID = 'env-agent';
-      process.env.LOOMINAL_PROJECT_ID = 'env-project';
-
-      const session = new AgentSession();
-
-      expect(session.agentId).toBe('env-agent');
-      expect(session.projectId).toBe('env-project');
+    it('should throw when projectId is empty string', () => {
+      expect(() => {
+        new AgentSession('test-agent', '');
+      }).toThrow('projectId is required and cannot be empty');
     });
 
-    it('should generate agent ID and use default project when no env vars set', () => {
-      delete process.env.LOOMINAL_AGENT_ID;
-      delete process.env.LOOMINAL_PROJECT_ID;
-
-      const session = new AgentSession();
-
-      // Agent ID should be a UUID
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      expect(session.agentId).toMatch(uuidRegex);
-      expect(session.projectId).toBe('default');
+    it('should throw when projectId is whitespace only', () => {
+      expect(() => {
+        new AgentSession('test-agent', '   ');
+      }).toThrow('projectId is required and cannot be empty');
     });
 
     it('should set sessionStart to current time', () => {
@@ -179,6 +61,55 @@ describe('AgentSession', () => {
       const session = new AgentSession('test-agent', 'test-project');
 
       expect(session.sessionStart.getTime()).toBe(now.getTime());
+    });
+
+    it('should set isSubagent to false by default', () => {
+      const session = new AgentSession('test-agent', 'test-project');
+
+      expect(session.isSubagent).toBe(false);
+    });
+
+    it('should accept explicit isSubagent=false', () => {
+      const session = new AgentSession('test-agent', 'test-project', false);
+
+      expect(session.isSubagent).toBe(false);
+      expect(session.parentId).toBeUndefined();
+    });
+  });
+
+  describe('Constructor - Sub-agent', () => {
+    it('should initialize sub-agent with parentId', () => {
+      const agentId = 'sub-agent-123';
+      const projectId = 'test-project';
+      const parentId = 'parent-agent-456';
+
+      const session = new AgentSession(agentId, projectId, true, parentId);
+
+      expect(session.agentId).toBe(agentId);
+      expect(session.projectId).toBe(projectId);
+      expect(session.isSubagent).toBe(true);
+      expect(session.parentId).toBe(parentId);
+      expect(session.sessionStart).toBeInstanceOf(Date);
+    });
+
+    it('should throw when isSubagent=true but parentId is missing', () => {
+      expect(() => {
+        new AgentSession('test-agent', 'test-project', true);
+      }).toThrow('parentId is required when isSubagent is true');
+    });
+
+    it('should throw when isSubagent=true but parentId is undefined', () => {
+      expect(() => {
+        new AgentSession('test-agent', 'test-project', true, undefined);
+      }).toThrow('parentId is required when isSubagent is true');
+    });
+
+    it('should allow parentId when isSubagent=false (for flexibility)', () => {
+      // This is allowed but parentId will be stored
+      const session = new AgentSession('test-agent', 'test-project', false, 'parent-id');
+
+      expect(session.isSubagent).toBe(false);
+      expect(session.parentId).toBe('parent-id');
     });
   });
 
@@ -236,7 +167,7 @@ describe('AgentSession', () => {
     });
   });
 
-  describe('getSessionInfo', () => {
+  describe('getSessionInfo - Root Agent', () => {
     it('should return session information with correct structure', () => {
       const now = new Date('2024-01-15T10:30:00Z');
       vi.setSystemTime(now);
@@ -250,6 +181,7 @@ describe('AgentSession', () => {
       expect(info).toEqual({
         agentId,
         projectId,
+        isSubagent: false,
         sessionStart: now.toISOString(),
         sessionDuration: 0,
       });
@@ -297,6 +229,48 @@ describe('AgentSession', () => {
       expect(info1.projectId).toBe(projectId);
       expect(info2.projectId).toBe(projectId);
     });
+
+    it('should not include parentId for root agent', () => {
+      const session = new AgentSession('test-agent', 'test-project');
+
+      const info = session.getSessionInfo();
+
+      expect(info.parentId).toBeUndefined();
+      expect('parentId' in info).toBe(false);
+    });
+  });
+
+  describe('getSessionInfo - Sub-agent', () => {
+    it('should return session information with parentId for sub-agent', () => {
+      const now = new Date('2024-01-15T10:30:00Z');
+      vi.setSystemTime(now);
+
+      const agentId = 'sub-agent-123';
+      const projectId = 'test-project';
+      const parentId = 'parent-agent-456';
+
+      const session = new AgentSession(agentId, projectId, true, parentId);
+
+      const info = session.getSessionInfo();
+
+      expect(info).toEqual({
+        agentId,
+        projectId,
+        isSubagent: true,
+        parentId,
+        sessionStart: now.toISOString(),
+        sessionDuration: 0,
+      });
+    });
+
+    it('should include parentId in session info when present', () => {
+      const session = new AgentSession('sub-agent', 'test-project', true, 'parent-agent');
+
+      const info = session.getSessionInfo();
+
+      expect(info.isSubagent).toBe(true);
+      expect(info.parentId).toBe('parent-agent');
+    });
   });
 
   describe('logSummary', () => {
@@ -329,6 +303,14 @@ describe('AgentSession', () => {
 
       expect(() => session.logSummary()).not.toThrow();
     });
+
+    it('should handle sub-agent session summary', () => {
+      const session = new AgentSession('sub-agent', 'test-project', true, 'parent-agent');
+
+      vi.advanceTimersByTime(1000);
+
+      expect(() => session.logSummary()).not.toThrow();
+    });
   });
 
   describe('Session Immutability', () => {
@@ -355,6 +337,20 @@ describe('AgentSession', () => {
 
       // TypeScript prevents modification at compile time with 'readonly' keyword
       expect(session.sessionStart).toBe(originalStart);
+    });
+
+    it('should have readonly isSubagent (TypeScript compile-time check)', () => {
+      const session = new AgentSession('test-agent', 'test-project');
+      const originalIsSubagent = session.isSubagent;
+
+      expect(session.isSubagent).toBe(originalIsSubagent);
+    });
+
+    it('should have readonly parentId (TypeScript compile-time check)', () => {
+      const session = new AgentSession('test-agent', 'test-project', true, 'parent-id');
+      const originalParentId = session.parentId;
+
+      expect(session.parentId).toBe(originalParentId);
     });
   });
 
@@ -394,6 +390,55 @@ describe('AgentSession', () => {
 
       expect(session1.getSessionDuration()).toBe(5000); // 2s + 3s
       expect(session2.getSessionDuration()).toBe(3000); // only 3s
+    });
+
+    it('should support both root and sub-agent sessions simultaneously', () => {
+      const now = new Date('2024-01-15T10:30:00Z');
+      vi.setSystemTime(now);
+
+      const rootSession = new AgentSession('root-agent', 'project-1');
+      const subSession = new AgentSession('sub-agent', 'project-1', true, 'root-agent');
+
+      expect(rootSession.isSubagent).toBe(false);
+      expect(rootSession.parentId).toBeUndefined();
+
+      expect(subSession.isSubagent).toBe(true);
+      expect(subSession.parentId).toBe('root-agent');
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle special characters in agentId', () => {
+      const session = new AgentSession('agent-123_test.abc', 'test-project');
+
+      expect(session.agentId).toBe('agent-123_test.abc');
+    });
+
+    it('should handle special characters in projectId', () => {
+      const session = new AgentSession('test-agent', 'project-2024_test.123');
+
+      expect(session.projectId).toBe('project-2024_test.123');
+    });
+
+    it('should handle UUID format agentId', () => {
+      const uuid = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+      const session = new AgentSession(uuid, 'test-project');
+
+      expect(session.agentId).toBe(uuid);
+    });
+
+    it('should handle very long agentId', () => {
+      const longId = 'a'.repeat(100);
+      const session = new AgentSession(longId, 'test-project');
+
+      expect(session.agentId).toBe(longId);
+    });
+
+    it('should handle very long projectId', () => {
+      const longId = 'p'.repeat(100);
+      const session = new AgentSession('test-agent', longId);
+
+      expect(session.projectId).toBe(longId);
     });
   });
 });

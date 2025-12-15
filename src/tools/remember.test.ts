@@ -51,7 +51,9 @@ describe('remember tool', () => {
       const result = await remember(input, storage, projectId, agentId);
 
       expect(result.memoryId).toBeDefined();
-      expect(result.memoryId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i); // UUID v4 format
+      expect(result.memoryId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      ); // UUID v4 format
       expect(result.expiresAt).toBeDefined(); // 'recent' category has 24h TTL
 
       expect(storage.set).toHaveBeenCalledTimes(1);
@@ -231,9 +233,7 @@ describe('remember tool', () => {
         content: '',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
       await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
         'Content cannot be empty'
       );
@@ -262,9 +262,7 @@ describe('remember tool', () => {
         content: largeContent,
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
 
       try {
         await remember(input, storage, projectId, agentId);
@@ -285,9 +283,7 @@ describe('remember tool', () => {
         category: 'recent',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
 
       try {
         await remember(input, storage, projectId, agentId);
@@ -305,9 +301,7 @@ describe('remember tool', () => {
         category: 'tasks',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
 
       try {
         await remember(input, storage, projectId, agentId);
@@ -323,9 +317,7 @@ describe('remember tool', () => {
         category: 'longterm',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
     });
 
     it('should reject invalid scope/category: shared with core', async () => {
@@ -335,9 +327,7 @@ describe('remember tool', () => {
         category: 'core',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
     });
 
     it('should reject invalid scope/category: private with decisions', async () => {
@@ -347,9 +337,7 @@ describe('remember tool', () => {
         category: 'decisions',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
 
       try {
         await remember(input, storage, projectId, agentId);
@@ -366,9 +354,7 @@ describe('remember tool', () => {
         category: 'architecture',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
     });
 
     it('should reject invalid scope/category: private with learnings', async () => {
@@ -378,9 +364,7 @@ describe('remember tool', () => {
         category: 'learnings',
       };
 
-      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
     });
   });
 
@@ -424,9 +408,7 @@ describe('remember tool', () => {
       const byteLength = Buffer.byteLength(unicodeContent, 'utf8');
 
       if (byteLength > 32 * 1024) {
-        await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(
-          PatternError
-        );
+        await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
       } else {
         const result = await remember(input, storage, projectId, agentId);
         expect(result.memoryId).toBeDefined();

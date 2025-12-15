@@ -89,9 +89,7 @@ export async function cleanup(
   // Phase 2: Enforce storage limits (only if not expireOnly)
   if (!expireOnly) {
     // Filter out expired memories from the list
-    const activeMemories = allMemories.filter(
-      (m) => !expiredMemories.find((em) => em.id === m.id)
-    );
+    const activeMemories = allMemories.filter((m) => !expiredMemories.find((em) => em.id === m.id));
 
     // Group memories by category
     const memoriesByCategory = {

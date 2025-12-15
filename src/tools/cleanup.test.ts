@@ -100,8 +100,7 @@ describe('cleanup', () => {
         content: `Memory ${i}`,
         createdAt: `2025-01-01T${String(i % 24).padStart(2, '0')}:00:00Z`,
         updatedAt: `2025-01-01T${String(i % 24).padStart(2, '0')}:00:00Z`,
-        expiresAt:
-          i === 0 ? new Date(now.getTime() - 1000).toISOString() : undefined,
+        expiresAt: i === 0 ? new Date(now.getTime() - 1000).toISOString() : undefined,
         version: 1,
       }));
 
@@ -318,9 +317,7 @@ describe('cleanup', () => {
       // Verify newest was NOT deleted
       const calls = vi.mocked(mockStorage.deleteFromProject).mock.calls;
       const deletedIds = calls.map((call) => call[0]);
-      expect(deletedIds).not.toContain(
-        `agents/${agentId}/recent/mem-newest`
-      );
+      expect(deletedIds).not.toContain(`agents/${agentId}/recent/mem-newest`);
     });
 
     it('should report error when core limit exceeded but not delete', async () => {
@@ -424,14 +421,12 @@ describe('cleanup', () => {
       ];
 
       vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
-      vi.mocked(mockStorage.deleteFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('mem-1')) {
-            throw new Error('Delete failed');
-          }
-          return true;
+      vi.mocked(mockStorage.deleteFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('mem-1')) {
+          throw new Error('Delete failed');
         }
-      );
+        return true;
+      });
 
       const result = await cleanup({}, mockStorage, projectId);
 
@@ -455,15 +450,13 @@ describe('cleanup', () => {
       }));
 
       vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
-      vi.mocked(mockStorage.deleteFromProject).mockImplementation(
-        async (key: string) => {
-          // Fail on first deletion
-          if (key.includes('mem-0')) {
-            throw new Error('Delete failed');
-          }
-          return true;
+      vi.mocked(mockStorage.deleteFromProject).mockImplementation(async (key: string) => {
+        // Fail on first deletion
+        if (key.includes('mem-0')) {
+          throw new Error('Delete failed');
         }
-      );
+        return true;
+      });
 
       const result = await cleanup({}, mockStorage, projectId);
 
@@ -473,13 +466,9 @@ describe('cleanup', () => {
     });
 
     it('should handle storage errors gracefully', async () => {
-      vi.mocked(mockStorage.listFromProject).mockRejectedValue(
-        new Error('Storage error')
-      );
+      vi.mocked(mockStorage.listFromProject).mockRejectedValue(new Error('Storage error'));
 
-      await expect(cleanup({}, mockStorage, projectId)).rejects.toThrow(
-        'Storage error'
-      );
+      await expect(cleanup({}, mockStorage, projectId)).rejects.toThrow('Storage error');
     });
   });
 

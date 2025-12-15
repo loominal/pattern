@@ -3,64 +3,47 @@
  * Tracks agent identity, project isolation, and session lifecycle
  */
 
-import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from './logger.js';
 
 const logger = createLogger('session');
 
 /**
- * Get or create an agent ID from environment or generate a new one
- * Checks LOOMINAL_AGENT_ID env var, or generates a new UUID
- */
-export function getOrCreateAgentId(): string {
-  const envAgentId = process.env.LOOMINAL_AGENT_ID;
-
-  if (envAgentId) {
-    logger.debug('Using agent ID from LOOMINAL_AGENT_ID environment variable', { agentId: envAgentId });
-    return envAgentId;
-  }
-
-  // Generate a new UUID for this agent
-  const newAgentId = uuidv4();
-  logger.info('Generated new agent ID', { agentId: newAgentId });
-  logger.warn('No LOOMINAL_AGENT_ID set - generated ephemeral ID. Set LOOMINAL_AGENT_ID to persist identity.');
-
-  return newAgentId;
-}
-
-/**
- * Get project ID from environment or return default
- * Checks LOOMINAL_PROJECT_ID env var, or returns "default"
- */
-export function getProjectId(): string {
-  const envProjectId = process.env.LOOMINAL_PROJECT_ID;
-
-  if (envProjectId) {
-    logger.debug('Using project ID from LOOMINAL_PROJECT_ID environment variable', { projectId: envProjectId });
-    return envProjectId;
-  }
-
-  logger.debug('No LOOMINAL_PROJECT_ID set - using "default" project');
-  return 'default';
-}
-
-/**
  * Agent session tracking
  * Manages agent identity, project scope, and session lifecycle
+ * Identity is now loaded from Warp's NATS KV store via unified identity management
  */
 export class AgentSession {
   public readonly agentId: string;
   public readonly projectId: string;
+  public readonly isSubagent: boolean;
+  public readonly parentId?: string;
   public readonly sessionStart: Date;
 
-  constructor(agentId?: string, projectId?: string) {
-    this.agentId = agentId || getOrCreateAgentId();
-    this.projectId = projectId || getProjectId();
+  constructor(agentId: string, projectId: string, isSubagent: boolean = false, parentId?: string) {
+    // Validate required parameters
+    if (!agentId || agentId.trim() === '') {
+      throw new Error('agentId is required and cannot be empty');
+    }
+    if (!projectId || projectId.trim() === '') {
+      throw new Error('projectId is required and cannot be empty');
+    }
+    if (isSubagent && !parentId) {
+      throw new Error('parentId is required when isSubagent is true');
+    }
+
+    this.agentId = agentId;
+    this.projectId = projectId;
+    this.isSubagent = isSubagent;
+    if (parentId !== undefined) {
+      this.parentId = parentId;
+    }
     this.sessionStart = new Date();
 
     logger.info('Agent session initialized', {
       agentId: this.agentId,
       projectId: this.projectId,
+      isSubagent: this.isSubagent,
+      parentId: this.parentId,
       sessionStart: this.sessionStart.toISOString(),
     });
   }
@@ -78,12 +61,16 @@ export class AgentSession {
   getSessionInfo(): {
     agentId: string;
     projectId: string;
+    isSubagent: boolean;
+    parentId?: string;
     sessionStart: string;
     sessionDuration: number;
   } {
     return {
       agentId: this.agentId,
       projectId: this.projectId,
+      isSubagent: this.isSubagent,
+      ...(this.parentId !== undefined && { parentId: this.parentId }),
       sessionStart: this.sessionStart.toISOString(),
       sessionDuration: this.getSessionDuration(),
     };
@@ -99,6 +86,8 @@ export class AgentSession {
     logger.info('Session summary', {
       agentId: this.agentId,
       projectId: this.projectId,
+      isSubagent: this.isSubagent,
+      parentId: this.parentId,
       duration: `${durationSec}s`,
     });
   }

@@ -69,7 +69,7 @@ describe('getVersionString', () => {
   it('should return version string', () => {
     const version = getVersionString();
 
-    expect(version).toBe('Pattern MCP Server v0.1.0');
+    expect(version).toBe('Pattern MCP Server v0.2.0');
   });
 
   it('should contain "Pattern"', () => {

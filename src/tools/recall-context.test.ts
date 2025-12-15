@@ -72,14 +72,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return privateMemories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return privateMemories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -107,14 +105,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === 'shared/') {
-            return sharedMemories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === 'shared/') {
+          return sharedMemories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -155,17 +151,15 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return privateMemories;
-          }
-          if (prefix === 'shared/') {
-            return sharedMemories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return privateMemories;
         }
-      );
+        if (prefix === 'shared/') {
+          return sharedMemories;
+        }
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         scope: 'both',
@@ -200,10 +194,7 @@ describe('recall_context', () => {
         scope: 'private',
       });
 
-      expect(mockStorage.listFromProject).toHaveBeenCalledWith(
-        `agents/${agentId}/`,
-        projectId
-      );
+      expect(mockStorage.listFromProject).toHaveBeenCalledWith(`agents/${agentId}/`, projectId);
       expect(mockStorage.listFromProject).toHaveBeenCalledTimes(1);
       expect(result.private).toHaveLength(1);
       expect(result.shared).toHaveLength(0);
@@ -264,14 +255,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         categories: ['core'],
@@ -318,14 +307,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         categories: ['core', 'tasks'],
@@ -456,14 +443,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         since: '2025-01-01T10:00:00Z',
@@ -527,14 +512,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -583,14 +566,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -637,14 +618,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -679,14 +658,12 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockImplementation(
-        async (prefix: string) => {
-          if (prefix === `agents/${agentId}/`) {
-            return memories;
-          }
-          return [];
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
         }
-      );
+        return [];
+      });
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -710,13 +687,9 @@ describe('recall_context', () => {
     });
 
     it('should handle storage errors', async () => {
-      vi.mocked(mockStorage.listFromProject).mockRejectedValue(
-        new Error('Storage error')
-      );
+      vi.mocked(mockStorage.listFromProject).mockRejectedValue(new Error('Storage error'));
 
-      await expect(
-        recallContext(mockStorage, projectId, agentId)
-      ).rejects.toThrow('Storage error');
+      await expect(recallContext(mockStorage, projectId, agentId)).rejects.toThrow('Storage error');
     });
 
     it('should generate summary with correct format', async () => {

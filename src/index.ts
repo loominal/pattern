@@ -5,10 +5,12 @@
  * Hierarchical agent memory system for Loom
  */
 
+import { connect, NatsConnection } from 'nats';
 import { loadConfig, validateConfig } from './config.js';
 import { logger } from './logger.js';
 import { AgentSession } from './session.js';
 import { PatternServer } from './server.js';
+import { loadIdentity } from './identity.js';
 
 /**
  * Parse command line arguments
@@ -27,7 +29,7 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): {
  * Get version string
  */
 export function getVersionString(): string {
-  return 'Pattern MCP Server v0.1.0';
+  return 'Pattern MCP Server v0.2.0';
 }
 
 /**
@@ -116,8 +118,42 @@ async function main() {
   logger.info(`NATS URL: ${config.natsUrl}`);
   logger.info(`Project ID: ${config.projectId}`);
 
-  // Initialize session
-  const session = new AgentSession(config.agentId, config.projectId);
+  // Connect to NATS to load identity
+  let nc: NatsConnection;
+  try {
+    logger.info('Connecting to NATS to load identity...');
+    nc = await connect({ servers: config.natsUrl });
+    logger.info('Connected to NATS');
+  } catch (error) {
+    logger.error('Failed to connect to NATS:', error);
+    process.exit(1);
+  }
+
+  // Load identity from Warp's NATS KV store
+  let identity;
+  try {
+    logger.info('Loading identity from NATS KV store...');
+    identity = await loadIdentity(nc, config.projectId);
+    logger.info('Identity loaded', {
+      agentId: identity.agentId,
+      isSubagent: identity.isSubagent,
+    });
+  } catch (error) {
+    logger.error('Failed to load identity from NATS:', error);
+    await nc.close();
+    process.exit(1);
+  }
+
+  // Close the temporary NATS connection (server will create its own)
+  await nc.close();
+
+  // Create session with loaded identity
+  const session = new AgentSession(
+    identity.agentId,
+    config.projectId,
+    identity.isSubagent,
+    identity.isSubagent ? identity.parentId : undefined
+  );
 
   // Create and initialize server
   const server = new PatternServer(config, session);

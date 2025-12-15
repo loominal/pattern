@@ -79,18 +79,14 @@ describe('NATS URL Parsing', () => {
     it('should handle special characters in password', async () => {
       const { NatsKvBackend } = await import('./nats-kv.js');
       // Password with special chars: p@ss:word/123
-      const backend = new NatsKvBackend(
-        'nats://user:p%40ss%3Aword%2F123@localhost:4222'
-      );
+      const backend = new NatsKvBackend('nats://user:p%40ss%3Aword%2F123@localhost:4222');
       expect(backend).toBeDefined();
     });
 
     it('should handle special characters in username', async () => {
       const { NatsKvBackend } = await import('./nats-kv.js');
       // Username with special char: user@domain
-      const backend = new NatsKvBackend(
-        'nats://user%40domain:pass@localhost:4222'
-      );
+      const backend = new NatsKvBackend('nats://user%40domain:pass@localhost:4222');
       expect(backend).toBeDefined();
     });
   });
@@ -113,9 +109,7 @@ describe('NatsKvBackend Error States', () => {
       const { NatsKvBackend } = await import('./nats-kv.js');
       const backend = new NatsKvBackend('nats://localhost:4222');
 
-      await expect(backend.ensureBucket('test')).rejects.toThrow(
-        'Not connected to NATS'
-      );
+      await expect(backend.ensureBucket('test')).rejects.toThrow('Not connected to NATS');
     });
 
     it('should report not connected before connect', async () => {

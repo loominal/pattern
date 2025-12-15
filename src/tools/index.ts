@@ -34,7 +34,8 @@ import { recallContext, type RecallContextInput } from './recall-context.js';
 export const TOOL_DEFINITIONS: Tool[] = [
   {
     name: 'remember',
-    description: 'Store a new memory with specified scope and category. Use this to remember important information, tasks, or learnings.',
+    description:
+      'Store a new memory with specified scope and category. Use this to remember important information, tasks, or learnings.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -45,12 +46,14 @@ export const TOOL_DEFINITIONS: Tool[] = [
         scope: {
           type: 'string',
           enum: ['private', 'shared'],
-          description: 'Memory scope: private (agent-specific) or shared (project-wide). Default: private',
+          description:
+            'Memory scope: private (agent-specific) or shared (project-wide). Default: private',
         },
         category: {
           type: 'string',
           enum: ['recent', 'tasks', 'longterm', 'core', 'decisions', 'architecture', 'learnings'],
-          description: 'Memory category. Private: recent (24h), tasks (24h), longterm, core. Shared: decisions, architecture, learnings. Default: recent',
+          description:
+            'Memory category. Private: recent (24h), tasks (24h), longterm, core. Shared: decisions, architecture, learnings. Default: recent',
         },
         metadata: {
           type: 'object',
@@ -83,7 +86,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'remember-task',
-    description: 'Quick shorthand to remember a task (private scope, tasks category, 24h TTL). Use this for current work items.',
+    description:
+      'Quick shorthand to remember a task (private scope, tasks category, 24h TTL). Use this for current work items.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -122,7 +126,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'remember-learning',
-    description: 'Quick shorthand to remember a learning or insight (private scope, recent category, 24h TTL). Use this for temporary notes.',
+    description:
+      'Quick shorthand to remember a learning or insight (private scope, recent category, 24h TTL). Use this for temporary notes.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -161,7 +166,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'commit-insight',
-    description: 'Promote a temporary memory (recent/tasks) to permanent storage (longterm). Use this when a temporary insight proves valuable.',
+    description:
+      'Promote a temporary memory (recent/tasks) to permanent storage (longterm). Use this when a temporary insight proves valuable.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -179,7 +185,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'core-memory',
-    description: 'Store identity-defining memory in the core category (no TTL, protected). Use sparingly for fundamental agent characteristics. Max 100 core memories per agent.',
+    description:
+      'Store identity-defining memory in the core category (no TTL, protected). Use sparingly for fundamental agent characteristics. Max 100 core memories per agent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -218,7 +225,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'forget',
-    description: 'Delete a memory by ID. Requires force=true for core memories. Can only delete your own private or shared memories.',
+    description:
+      'Delete a memory by ID. Requires force=true for core memories. Can only delete your own private or shared memories.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -236,14 +244,16 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'recall-context',
-    description: 'Retrieve memory context at session start. Returns prioritized memories by category (core first, then longterm, decisions, etc.) with a 4KB summary.',
+    description:
+      'Retrieve memory context at session start. Returns prioritized memories by category (core first, then longterm, decisions, etc.) with a 4KB summary.',
     inputSchema: {
       type: 'object',
       properties: {
         scope: {
           type: 'string',
           enum: ['private', 'shared', 'both'],
-          description: 'Which memories to retrieve: private (agent-only), shared (project-wide), or both. Default: both',
+          description:
+            'Which memories to retrieve: private (agent-only), shared (project-wide), or both. Default: both',
         },
         categories: {
           type: 'array',
@@ -266,7 +276,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'share-learning',
-    description: 'Share a private memory with all project agents. Only longterm and core memories can be shared. Creates a copy in shared scope.',
+    description:
+      'Share a private memory with all project agents. Only longterm and core memories can be shared. Creates a copy in shared scope.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -281,7 +292,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
         },
         keepPrivate: {
           type: 'boolean',
-          description: 'If true, keep the original private memory. If false, move it (delete private). Default: false',
+          description:
+            'If true, keep the original private memory. If false, move it (delete private). Default: false',
         },
       },
       required: ['memoryId'],
@@ -289,7 +301,8 @@ export const TOOL_DEFINITIONS: Tool[] = [
   },
   {
     name: 'cleanup',
-    description: 'Run maintenance tasks: expire TTL memories and enforce storage limits. Should be called periodically.',
+    description:
+      'Run maintenance tasks: expire TTL memories and enforce storage limits. Should be called periodically.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -309,6 +322,8 @@ export interface ToolContext {
   agentId: string;
   projectId: string;
   storage: NatsKvBackend;
+  isSubagent?: boolean;
+  parentId?: string;
 }
 
 /**
@@ -333,7 +348,12 @@ export async function handleToolCall(
       return rememberTask(args as unknown as RememberTaskInput, storage, projectId, agentId);
 
     case 'remember-learning':
-      return rememberLearning(args as unknown as RememberLearningInput, storage, projectId, agentId);
+      return rememberLearning(
+        args as unknown as RememberLearningInput,
+        storage,
+        projectId,
+        agentId
+      );
 
     case 'commit-insight':
       return commitInsight(args as unknown as CommitInsightInput, storage, projectId, agentId);
@@ -344,8 +364,19 @@ export async function handleToolCall(
     case 'forget':
       return forget(args as unknown as ForgetInput, storage, projectId, agentId);
 
-    case 'recall-context':
-      return recallContext(storage, projectId, agentId, args as unknown as RecallContextInput);
+    case 'recall-context': {
+      const subagentInfo =
+        context.isSubagent && context.parentId
+          ? { isSubagent: true, parentId: context.parentId }
+          : undefined;
+      return recallContext(
+        storage,
+        projectId,
+        agentId,
+        args as unknown as RecallContextInput,
+        subagentInfo
+      );
+    }
 
     case 'share-learning':
       return shareLearning(args as unknown as ShareLearningInput, storage, projectId, agentId);

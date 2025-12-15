@@ -131,8 +131,9 @@ describe('core-memory tool', () => {
 
     it('should allow creating core memory when under limit', async () => {
       // Mock 99 existing core memories (under the 100 limit)
-      const existingKeys = Array.from({ length: 99 }, (_, i) =>
-        `agents/${agentId}/core/memory-${i}`
+      const existingKeys = Array.from(
+        { length: 99 },
+        (_, i) => `agents/${agentId}/core/memory-${i}`
       );
       vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
       vi.mocked(mockStorage.set).mockResolvedValue();
@@ -171,13 +172,11 @@ describe('core-memory tool', () => {
         content: '',
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: 'Content cannot be empty',
       });
@@ -188,13 +187,11 @@ describe('core-memory tool', () => {
         content: '   \n\t  ',
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: 'Content cannot be empty',
       });
@@ -208,13 +205,11 @@ describe('core-memory tool', () => {
         content: oversizedContent,
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: expect.stringContaining('exceeds maximum'),
         details: expect.objectContaining({
@@ -232,13 +227,11 @@ describe('core-memory tool', () => {
         content: emojiContent,
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
         message: expect.stringContaining('exceeds maximum'),
       });
@@ -248,8 +241,9 @@ describe('core-memory tool', () => {
   describe('Storage Full Errors', () => {
     it('should throw error when max core memories (100) is reached', async () => {
       // Mock 100 existing core memories (at the limit)
-      const existingKeys = Array.from({ length: 100 }, (_, i) =>
-        `agents/${agentId}/core/memory-${i}`
+      const existingKeys = Array.from(
+        { length: 100 },
+        (_, i) => `agents/${agentId}/core/memory-${i}`
       );
       vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
 
@@ -257,13 +251,11 @@ describe('core-memory tool', () => {
         content: 'One too many',
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.STORAGE_FULL,
         message: expect.stringContaining('Maximum number of core memories'),
         details: {
@@ -279,8 +271,9 @@ describe('core-memory tool', () => {
 
     it('should throw error when core memories exceed limit', async () => {
       // Mock more than 100 existing core memories (shouldn't happen, but test defensive code)
-      const existingKeys = Array.from({ length: 150 }, (_, i) =>
-        `agents/${agentId}/core/memory-${i}`
+      const existingKeys = Array.from(
+        { length: 150 },
+        (_, i) => `agents/${agentId}/core/memory-${i}`
       );
       vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
 
@@ -288,13 +281,11 @@ describe('core-memory tool', () => {
         content: 'Cannot add',
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.STORAGE_FULL,
         details: {
           currentCount: 150,
@@ -330,13 +321,11 @@ describe('core-memory tool', () => {
         content: overContent,
       };
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toThrow(PatternError);
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toThrow(
+        PatternError
+      );
 
-      await expect(
-        coreMemory(input, mockStorage, projectId, agentId)
-      ).rejects.toMatchObject({
+      await expect(coreMemory(input, mockStorage, projectId, agentId)).rejects.toMatchObject({
         code: PatternErrorCode.VALIDATION_ERROR,
       });
     });

@@ -88,26 +88,31 @@ function generateSummary(memories: Memory[], maxBytes: number): string {
 }
 
 /**
+ * Sub-agent identity information
+ */
+export interface SubagentInfo {
+  isSubagent: boolean;
+  parentId?: string;
+}
+
+/**
  * Recall context from storage
  *
  * @param storage - Storage backend instance
  * @param projectId - Project identifier
  * @param agentId - Agent identifier (for private memories)
  * @param input - Input parameters
+ * @param subagentInfo - Sub-agent identity info (for parent memory access)
  * @returns RecallResult with private/shared memories and summary
  */
 export async function recallContext(
   storage: StorageBackend,
   projectId: string,
   agentId: string,
-  input: RecallContextInput = {}
+  input: RecallContextInput = {},
+  subagentInfo?: SubagentInfo
 ): Promise<RecallResult> {
-  const {
-    scope = 'both',
-    categories = [],
-    limit = 50,
-    since,
-  } = input;
+  const { scope = 'both', categories = [], limit = 50, since } = input;
 
   // Validate limit
   const effectiveLimit = Math.min(Math.max(1, limit), 200);
@@ -119,6 +124,8 @@ export async function recallContext(
     categories,
     limit: effectiveLimit,
     since,
+    isSubagent: subagentInfo?.isSubagent ?? false,
+    parentId: subagentInfo?.parentId,
   });
 
   // Fetch memories based on scope
@@ -131,6 +138,28 @@ export async function recallContext(
       const privatePrefix = `agents/${agentId}/`;
       privateMemories = await storage.listFromProject(privatePrefix, projectId);
       logger.debug('Fetched private memories', { count: privateMemories.length });
+
+      // If sub-agent, also fetch parent's non-core memories
+      if (subagentInfo?.isSubagent && subagentInfo.parentId) {
+        logger.debug('Sub-agent mode detected, fetching parent memories', {
+          parentId: subagentInfo.parentId,
+        });
+
+        const parentPrefix = `agents/${subagentInfo.parentId}/`;
+        const parentMemories = await storage.listFromProject(parentPrefix, projectId);
+
+        // Filter out core memories (security boundary - sub-agents cannot see parent core)
+        const parentNonCoreMemories = parentMemories.filter((m) => m.category !== 'core');
+
+        logger.debug('Fetched parent memories (excluding core)', {
+          total: parentMemories.length,
+          nonCore: parentNonCoreMemories.length,
+          filtered: parentMemories.length - parentNonCoreMemories.length,
+        });
+
+        // Add parent's non-core memories to private memories
+        privateMemories = [...privateMemories, ...parentNonCoreMemories];
+      }
     }
 
     // Fetch shared memories
@@ -145,7 +174,7 @@ export async function recallContext(
 
     // Separate expired memories (for counting)
     const expiredMemories = allMemories.filter(isExpired);
-    const activeMemories = allMemories.filter(m => !isExpired(m));
+    const activeMemories = allMemories.filter((m) => !isExpired(m));
 
     logger.debug('Separated expired memories', {
       active: activeMemories.length,
@@ -157,14 +186,14 @@ export async function recallContext(
 
     // Filter by categories if provided
     if (categories.length > 0) {
-      filteredMemories = filteredMemories.filter(m => categories.includes(m.category));
+      filteredMemories = filteredMemories.filter((m) => categories.includes(m.category));
       logger.debug('Filtered by categories', { count: filteredMemories.length, categories });
     }
 
     // Filter by since timestamp if provided
     if (since) {
       const sinceDate = new Date(since);
-      filteredMemories = filteredMemories.filter(m => {
+      filteredMemories = filteredMemories.filter((m) => {
         const updatedAt = new Date(m.updatedAt);
         return updatedAt > sinceDate;
       });
@@ -192,8 +221,8 @@ export async function recallContext(
     logger.debug('Applied limit', { limit: effectiveLimit, count: limitedMemories.length });
 
     // Separate back into private and shared
-    const resultPrivateMemories = limitedMemories.filter(m => m.scope === 'private');
-    const resultSharedMemories = limitedMemories.filter(m => m.scope === 'shared');
+    const resultPrivateMemories = limitedMemories.filter((m) => m.scope === 'private');
+    const resultSharedMemories = limitedMemories.filter((m) => m.scope === 'shared');
 
     // Generate summary (4KB max)
     const maxSummaryBytes = 4096;

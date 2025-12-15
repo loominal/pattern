@@ -50,7 +50,9 @@ describe('remember-task tool', () => {
       const result = await rememberTask(input, storage, projectId, agentId);
 
       expect(result.memoryId).toBeDefined();
-      expect(result.memoryId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i); // UUID v4 format
+      expect(result.memoryId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      ); // UUID v4 format
       expect(result.expiresAt).toBeDefined(); // tasks always have 24h TTL
 
       expect(storage.set).toHaveBeenCalledTimes(1);
@@ -162,9 +164,7 @@ describe('remember-task tool', () => {
         content: '',
       };
 
-      await expect(rememberTask(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(rememberTask(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
       await expect(rememberTask(input, storage, projectId, agentId)).rejects.toThrow(
         'Content cannot be empty'
       );
@@ -193,9 +193,7 @@ describe('remember-task tool', () => {
         content: largeContent,
       };
 
-      await expect(rememberTask(input, storage, projectId, agentId)).rejects.toThrow(
-        PatternError
-      );
+      await expect(rememberTask(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
 
       try {
         await rememberTask(input, storage, projectId, agentId);

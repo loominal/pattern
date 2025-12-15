@@ -34,10 +34,7 @@ export async function commitInsight(
 ): Promise<CommitInsightOutput> {
   // Validate input
   if (!input.memoryId || input.memoryId.trim() === '') {
-    throw new PatternError(
-      PatternErrorCode.VALIDATION_ERROR,
-      'Memory ID cannot be empty'
-    );
+    throw new PatternError(PatternErrorCode.VALIDATION_ERROR, 'Memory ID cannot be empty');
   }
 
   // Search for the memory in 'recent' and 'tasks' categories (only private scope)

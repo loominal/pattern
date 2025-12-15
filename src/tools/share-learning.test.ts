@@ -65,23 +65,16 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-1')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-1')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
-      const result = await shareLearning(
-        { memoryId: 'mem-1' },
-        mockStorage,
-        projectId,
-        agentId
-      );
+      const result = await shareLearning({ memoryId: 'mem-1' }, mockStorage, projectId, agentId);
 
       expect(result.sharedMemoryId).toBe('new-shared-memory-id');
       expect(result.originalDeleted).toBe(true);
@@ -112,14 +105,12 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('core') && key.includes('mem-2')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('core') && key.includes('mem-2')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
@@ -152,14 +143,12 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-3')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-3')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
@@ -191,14 +180,12 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-4')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-4')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       const result = await shareLearning(
         { memoryId: 'mem-4', keepPrivate: true },
@@ -230,23 +217,16 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-5')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-5')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
-      await shareLearning(
-        { memoryId: 'mem-5' },
-        mockStorage,
-        projectId,
-        agentId
-      );
+      await shareLearning({ memoryId: 'mem-5' }, mockStorage, projectId, agentId);
 
       expect(mockStorage.set).toHaveBeenCalledWith(
         expect.any(String),
@@ -276,14 +256,12 @@ describe('share_learning', () => {
       };
 
       // Mock to return null for recent, tasks, longterm, but found in core
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('core') && key.includes('mem-search')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('core') && key.includes('mem-search')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
@@ -321,21 +299,11 @@ describe('share_learning', () => {
       vi.mocked(mockStorage.getFromProject).mockResolvedValue(null);
 
       await expect(
-        shareLearning(
-          { memoryId: 'non-existent' },
-          mockStorage,
-          projectId,
-          agentId
-        )
+        shareLearning({ memoryId: 'non-existent' }, mockStorage, projectId, agentId)
       ).rejects.toThrow(PatternError);
 
       await expect(
-        shareLearning(
-          { memoryId: 'non-existent' },
-          mockStorage,
-          projectId,
-          agentId
-        )
+        shareLearning({ memoryId: 'non-existent' }, mockStorage, projectId, agentId)
       ).rejects.toThrow("Private memory with ID 'non-existent' not found");
     });
 
@@ -357,9 +325,7 @@ describe('share_learning', () => {
           agentId
         );
       } catch (error) {
-        expect((error as PatternError).code).toBe(
-          PatternErrorCode.INVALID_CATEGORY
-        );
+        expect((error as PatternError).code).toBe(PatternErrorCode.INVALID_CATEGORY);
       }
     });
 
@@ -376,22 +342,15 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('recent') && key.includes('mem-recent')) {
-            return recentMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('recent') && key.includes('mem-recent')) {
+          return recentMemory;
         }
-      );
+        return null;
+      });
 
       await expect(
-        shareLearning(
-          { memoryId: 'mem-recent' },
-          mockStorage,
-          projectId,
-          agentId
-        )
+        shareLearning({ memoryId: 'mem-recent' }, mockStorage, projectId, agentId)
       ).rejects.toThrow("Only 'longterm' and 'core' memories can be shared");
     });
 
@@ -408,35 +367,21 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('tasks') && key.includes('mem-task')) {
-            return tasksMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('tasks') && key.includes('mem-task')) {
+          return tasksMemory;
         }
-      );
+        return null;
+      });
 
       await expect(
-        shareLearning(
-          { memoryId: 'mem-task' },
-          mockStorage,
-          projectId,
-          agentId
-        )
+        shareLearning({ memoryId: 'mem-task' }, mockStorage, projectId, agentId)
       ).rejects.toThrow(PatternError);
 
       try {
-        await shareLearning(
-          { memoryId: 'mem-task' },
-          mockStorage,
-          projectId,
-          agentId
-        );
+        await shareLearning({ memoryId: 'mem-task' }, mockStorage, projectId, agentId);
       } catch (error) {
-        expect((error as PatternError).code).toBe(
-          PatternErrorCode.INVALID_CATEGORY
-        );
+        expect((error as PatternError).code).toBe(PatternErrorCode.INVALID_CATEGORY);
         expect((error as PatternError).details?.category).toBe('tasks');
       }
     });
@@ -454,14 +399,12 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-del-fail')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-del-fail')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       // Simulate deletion failure
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(false);
@@ -492,14 +435,12 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-no-meta')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-no-meta')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
@@ -535,27 +476,16 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (
-            key.includes('longterm') &&
-            key.includes('mem-agent') &&
-            key.includes(agentId)
-          ) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-agent') && key.includes(agentId)) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
-      await shareLearning(
-        { memoryId: 'mem-agent' },
-        mockStorage,
-        projectId,
-        agentId
-      );
+      await shareLearning({ memoryId: 'mem-agent' }, mockStorage, projectId, agentId);
 
       expect(mockStorage.set).toHaveBeenCalledWith(
         expect.any(String),
@@ -578,34 +508,23 @@ describe('share_learning', () => {
         version: 1,
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-time')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-time')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
-      await shareLearning(
-        { memoryId: 'mem-time' },
-        mockStorage,
-        projectId,
-        agentId
-      );
+      await shareLearning({ memoryId: 'mem-time' }, mockStorage, projectId, agentId);
 
       const setCalls = vi.mocked(mockStorage.set).mock.calls;
       const sharedMemory = setCalls[0][1] as Memory;
 
       // Timestamps should be new (not from 2020)
-      expect(new Date(sharedMemory.createdAt).getFullYear()).toBeGreaterThan(
-        2020
-      );
-      expect(new Date(sharedMemory.updatedAt).getFullYear()).toBeGreaterThan(
-        2020
-      );
+      expect(new Date(sharedMemory.createdAt).getFullYear()).toBeGreaterThan(2020);
+      expect(new Date(sharedMemory.updatedAt).getFullYear()).toBeGreaterThan(2020);
     });
 
     it('should set version to 1 for new shared memory', async () => {
@@ -621,23 +540,16 @@ describe('share_learning', () => {
         version: 5, // High version
       };
 
-      vi.mocked(mockStorage.getFromProject).mockImplementation(
-        async (key: string) => {
-          if (key.includes('longterm') && key.includes('mem-version')) {
-            return privateMemory;
-          }
-          return null;
+      vi.mocked(mockStorage.getFromProject).mockImplementation(async (key: string) => {
+        if (key.includes('longterm') && key.includes('mem-version')) {
+          return privateMemory;
         }
-      );
+        return null;
+      });
 
       vi.mocked(mockStorage.deleteFromProject).mockResolvedValue(true);
 
-      await shareLearning(
-        { memoryId: 'mem-version' },
-        mockStorage,
-        projectId,
-        agentId
-      );
+      await shareLearning({ memoryId: 'mem-version' }, mockStorage, projectId, agentId);
 
       expect(mockStorage.set).toHaveBeenCalledWith(
         expect.any(String),

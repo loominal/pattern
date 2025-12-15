@@ -39,10 +39,7 @@ export async function remember(
 ): Promise<RememberOutput> {
   // Validate input
   if (!input.content || input.content.trim() === '') {
-    throw new PatternError(
-      PatternErrorCode.VALIDATION_ERROR,
-      'Content cannot be empty'
-    );
+    throw new PatternError(PatternErrorCode.VALIDATION_ERROR, 'Content cannot be empty');
   }
 
   // Check content size
