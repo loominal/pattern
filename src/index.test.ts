@@ -139,18 +139,18 @@ describe('getHelpString', () => {
   it('should document PROJECT_ID env var', () => {
     const help = getHelpString();
 
-    expect(help).toContain('LOOM_PROJECT_ID');
+    expect(help).toContain('LOOMINAL_PROJECT_ID');
   });
 
   it('should document AGENT_ID env var', () => {
     const help = getHelpString();
 
-    expect(help).toContain('LOOM_AGENT_ID');
+    expect(help).toContain('LOOMINAL_AGENT_ID');
   });
 
   it('should contain github link', () => {
     const help = getHelpString();
 
-    expect(help).toContain('https://github.com/mdlopresti/loom-pattern');
+    expect(help).toContain('https://github.com/loominal/pattern');
   });
 });

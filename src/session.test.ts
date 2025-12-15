@@ -19,17 +19,17 @@ describe('getOrCreateAgentId', () => {
     process.env = originalEnv;
   });
 
-  it('should return agent ID from LOOM_AGENT_ID environment variable when set', () => {
+  it('should return agent ID from LOOMINAL_AGENT_ID environment variable when set', () => {
     const testAgentId = 'test-agent-123';
-    process.env.LOOM_AGENT_ID = testAgentId;
+    process.env.LOOMINAL_AGENT_ID = testAgentId;
 
     const agentId = getOrCreateAgentId();
 
     expect(agentId).toBe(testAgentId);
   });
 
-  it('should generate a new UUID when LOOM_AGENT_ID is not set', () => {
-    delete process.env.LOOM_AGENT_ID;
+  it('should generate a new UUID when LOOMINAL_AGENT_ID is not set', () => {
+    delete process.env.LOOMINAL_AGENT_ID;
 
     const agentId = getOrCreateAgentId();
 
@@ -38,8 +38,8 @@ describe('getOrCreateAgentId', () => {
     expect(agentId).toMatch(uuidRegex);
   });
 
-  it('should generate different UUIDs on subsequent calls when LOOM_AGENT_ID is not set', () => {
-    delete process.env.LOOM_AGENT_ID;
+  it('should generate different UUIDs on subsequent calls when LOOMINAL_AGENT_ID is not set', () => {
+    delete process.env.LOOMINAL_AGENT_ID;
 
     const agentId1 = getOrCreateAgentId();
     const agentId2 = getOrCreateAgentId();
@@ -47,8 +47,8 @@ describe('getOrCreateAgentId', () => {
     expect(agentId1).not.toBe(agentId2);
   });
 
-  it('should handle empty string in LOOM_AGENT_ID as falsy', () => {
-    process.env.LOOM_AGENT_ID = '';
+  it('should handle empty string in LOOMINAL_AGENT_ID as falsy', () => {
+    process.env.LOOMINAL_AGENT_ID = '';
 
     const agentId = getOrCreateAgentId();
 
@@ -70,25 +70,25 @@ describe('getProjectId', () => {
     process.env = originalEnv;
   });
 
-  it('should return project ID from LOOM_PROJECT_ID environment variable when set', () => {
+  it('should return project ID from LOOMINAL_PROJECT_ID environment variable when set', () => {
     const testProjectId = 'my-awesome-project';
-    process.env.LOOM_PROJECT_ID = testProjectId;
+    process.env.LOOMINAL_PROJECT_ID = testProjectId;
 
     const projectId = getProjectId();
 
     expect(projectId).toBe(testProjectId);
   });
 
-  it('should return "default" when LOOM_PROJECT_ID is not set', () => {
-    delete process.env.LOOM_PROJECT_ID;
+  it('should return "default" when LOOMINAL_PROJECT_ID is not set', () => {
+    delete process.env.LOOMINAL_PROJECT_ID;
 
     const projectId = getProjectId();
 
     expect(projectId).toBe('default');
   });
 
-  it('should return "default" when LOOM_PROJECT_ID is empty string', () => {
-    process.env.LOOM_PROJECT_ID = '';
+  it('should return "default" when LOOMINAL_PROJECT_ID is empty string', () => {
+    process.env.LOOMINAL_PROJECT_ID = '';
 
     const projectId = getProjectId();
 
@@ -97,7 +97,7 @@ describe('getProjectId', () => {
 
   it('should handle special characters in project ID', () => {
     const specialProjectId = 'project-2024_test.123';
-    process.env.LOOM_PROJECT_ID = specialProjectId;
+    process.env.LOOMINAL_PROJECT_ID = specialProjectId;
 
     const projectId = getProjectId();
 
@@ -134,7 +134,7 @@ describe('AgentSession', () => {
 
     it('should use getOrCreateAgentId when agentId is not provided', () => {
       const testAgentId = 'env-agent-id';
-      process.env.LOOM_AGENT_ID = testAgentId;
+      process.env.LOOMINAL_AGENT_ID = testAgentId;
 
       const session = new AgentSession(undefined, 'test-project');
 
@@ -143,7 +143,7 @@ describe('AgentSession', () => {
 
     it('should use getProjectId when projectId is not provided', () => {
       const testProjectId = 'env-project-id';
-      process.env.LOOM_PROJECT_ID = testProjectId;
+      process.env.LOOMINAL_PROJECT_ID = testProjectId;
 
       const session = new AgentSession('test-agent');
 
@@ -151,8 +151,8 @@ describe('AgentSession', () => {
     });
 
     it('should use defaults from environment when both params are undefined', () => {
-      process.env.LOOM_AGENT_ID = 'env-agent';
-      process.env.LOOM_PROJECT_ID = 'env-project';
+      process.env.LOOMINAL_AGENT_ID = 'env-agent';
+      process.env.LOOMINAL_PROJECT_ID = 'env-project';
 
       const session = new AgentSession();
 
@@ -161,8 +161,8 @@ describe('AgentSession', () => {
     });
 
     it('should generate agent ID and use default project when no env vars set', () => {
-      delete process.env.LOOM_AGENT_ID;
-      delete process.env.LOOM_PROJECT_ID;
+      delete process.env.LOOMINAL_AGENT_ID;
+      delete process.env.LOOMINAL_PROJECT_ID;
 
       const session = new AgentSession();
 
