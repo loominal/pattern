@@ -13,7 +13,7 @@ const logger = createLogger('recall-context');
  * Input parameters for recall_context
  */
 export interface RecallContextInput {
-  scope?: 'private' | 'shared' | 'both'; // default: 'both'
+  scopes?: ('private' | 'personal' | 'team' | 'public')[]; // default: all scopes
   categories?: MemoryCategory[]; // filter by categories (empty = all)
   limit?: number; // default: 50, max: 200
   since?: string; // ISO 8601, only memories after this
@@ -112,7 +112,7 @@ export async function recallContext(
   input: RecallContextInput = {},
   subagentInfo?: SubagentInfo
 ): Promise<RecallResult> {
-  const { scope = 'both', categories = [], limit = 50, since } = input;
+  const { scopes = ['private', 'personal', 'team', 'public'], categories = [], limit = 50, since } = input;
 
   // Validate limit
   const effectiveLimit = Math.min(Math.max(1, limit), 200);
@@ -120,7 +120,7 @@ export async function recallContext(
   logger.debug('Recalling context', {
     projectId,
     agentId,
-    scope,
+    scopes,
     categories,
     limit: effectiveLimit,
     since,
@@ -128,13 +128,15 @@ export async function recallContext(
     parentId: subagentInfo?.parentId,
   });
 
-  // Fetch memories based on scope
+  // Fetch memories based on requested scopes
   let privateMemories: Memory[] = [];
-  let sharedMemories: Memory[] = [];
+  let personalMemories: Memory[] = [];
+  let teamMemories: Memory[] = [];
+  let publicMemories: Memory[] = [];
 
   try {
-    // Fetch private memories
-    if (scope === 'private' || scope === 'both') {
+    // Fetch private memories (project bucket)
+    if (scopes.includes('private')) {
       const privatePrefix = `agents/${agentId}/`;
       privateMemories = await storage.listFromProject(privatePrefix, projectId);
       logger.debug('Fetched private memories', { count: privateMemories.length });
@@ -162,15 +164,29 @@ export async function recallContext(
       }
     }
 
-    // Fetch shared memories
-    if (scope === 'shared' || scope === 'both') {
-      const sharedPrefix = 'shared/';
-      sharedMemories = await storage.listFromProject(sharedPrefix, projectId);
-      logger.debug('Fetched shared memories', { count: sharedMemories.length });
+    // Fetch personal memories (user bucket)
+    if (scopes.includes('personal')) {
+      const personalPrefix = `pattern.agents/${agentId}/`;
+      personalMemories = await storage.listFromUserBucket(personalPrefix, agentId);
+      logger.debug('Fetched personal memories', { count: personalMemories.length });
+    }
+
+    // Fetch team memories (project bucket)
+    if (scopes.includes('team')) {
+      const teamPrefix = 'shared/';
+      teamMemories = await storage.listFromProject(teamPrefix, projectId);
+      logger.debug('Fetched team memories', { count: teamMemories.length });
+    }
+
+    // Fetch public memories (global bucket)
+    if (scopes.includes('public')) {
+      const publicPrefix = 'shared/';
+      publicMemories = await storage.listFromGlobalBucket(publicPrefix);
+      logger.debug('Fetched public memories', { count: publicMemories.length });
     }
 
     // Combine all memories for processing
-    const allMemories = [...privateMemories, ...sharedMemories];
+    const allMemories = [...privateMemories, ...personalMemories, ...teamMemories, ...publicMemories];
 
     // Separate expired memories (for counting)
     const expiredMemories = allMemories.filter(isExpired);
@@ -220,9 +236,11 @@ export async function recallContext(
     const limitedMemories = filteredMemories.slice(0, effectiveLimit);
     logger.debug('Applied limit', { limit: effectiveLimit, count: limitedMemories.length });
 
-    // Separate back into private and shared
+    // Separate back into scope categories
     const resultPrivateMemories = limitedMemories.filter((m) => m.scope === 'private');
-    const resultSharedMemories = limitedMemories.filter((m) => m.scope === 'shared');
+    const resultPersonalMemories = limitedMemories.filter((m) => m.scope === 'personal');
+    const resultTeamMemories = limitedMemories.filter((m) => m.scope === 'team');
+    const resultPublicMemories = limitedMemories.filter((m) => m.scope === 'public');
 
     // Generate summary (4KB max)
     const maxSummaryBytes = 4096;
@@ -230,18 +248,24 @@ export async function recallContext(
 
     logger.info('Context recalled successfully', {
       private: resultPrivateMemories.length,
-      shared: resultSharedMemories.length,
+      personal: resultPersonalMemories.length,
+      team: resultTeamMemories.length,
+      public: resultPublicMemories.length,
       expired: expiredMemories.length,
       summaryBytes: Buffer.byteLength(summary, 'utf8'),
     });
 
     return {
       private: resultPrivateMemories,
-      shared: resultSharedMemories,
+      personal: resultPersonalMemories,
+      team: resultTeamMemories,
+      public: resultPublicMemories,
       summary,
       counts: {
         private: resultPrivateMemories.length,
-        shared: resultSharedMemories.length,
+        personal: resultPersonalMemories.length,
+        team: resultTeamMemories.length,
+        public: resultPublicMemories.length,
         expired: expiredMemories.length,
       },
     };

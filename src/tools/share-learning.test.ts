@@ -44,6 +44,15 @@ describe('share_learning', () => {
       deleteFromProject: vi.fn().mockResolvedValue(false),
       listFromProject: vi.fn().mockResolvedValue([]),
       keysFromProject: vi.fn().mockResolvedValue([]),
+      // New multi-bucket methods
+      getFromUserBucket: vi.fn().mockResolvedValue(null),
+      listFromUserBucket: vi.fn().mockResolvedValue([]),
+      keysFromUserBucket: vi.fn().mockResolvedValue([]),
+      deleteFromUserBucket: vi.fn().mockResolvedValue(false),
+      getFromGlobalBucket: vi.fn().mockResolvedValue(null),
+      listFromGlobalBucket: vi.fn().mockResolvedValue([]),
+      keysFromGlobalBucket: vi.fn().mockResolvedValue([]),
+      deleteFromGlobalBucket: vi.fn().mockResolvedValue(false),
     } as unknown as NatsKvBackend;
   });
 
@@ -76,7 +85,7 @@ describe('share_learning', () => {
 
       const result = await shareLearning({ memoryId: 'mem-1' }, mockStorage, projectId, agentId);
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
       expect(result.originalDeleted).toBe(true);
 
       // Verify set was called with correct shared memory
@@ -84,7 +93,7 @@ describe('share_learning', () => {
         'shared/learnings/new-shared-memory-id',
         expect.objectContaining({
           id: 'new-shared-memory-id',
-          scope: 'shared',
+          scope: 'team',
           category: 'learnings',
           content: 'Important learning to share',
           agentId, // Original agent preserved
@@ -121,7 +130,7 @@ describe('share_learning', () => {
         agentId
       );
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
       expect(mockStorage.set).toHaveBeenCalledWith(
         'shared/decisions/new-shared-memory-id',
         expect.objectContaining({
@@ -188,13 +197,13 @@ describe('share_learning', () => {
       });
 
       const result = await shareLearning(
-        { memoryId: 'mem-4', keepPrivate: true },
+        { memoryId: 'mem-4', keepOriginal: true },
         mockStorage,
         projectId,
         agentId
       );
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
       expect(result.originalDeleted).toBe(false);
       expect(mockStorage.deleteFromProject).not.toHaveBeenCalled();
     });
@@ -272,7 +281,7 @@ describe('share_learning', () => {
         agentId
       );
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
 
       // Should have checked multiple categories
       expect(mockStorage.getFromProject).toHaveBeenCalledWith(
@@ -304,7 +313,7 @@ describe('share_learning', () => {
 
       await expect(
         shareLearning({ memoryId: 'non-existent' }, mockStorage, projectId, agentId)
-      ).rejects.toThrow("Private memory with ID 'non-existent' not found");
+      ).rejects.toThrow("Memory with ID 'non-existent' not found in private or personal scope");
     });
 
     it('should throw error for invalid shared category', async () => {
@@ -416,7 +425,7 @@ describe('share_learning', () => {
         agentId
       );
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
       expect(result.originalDeleted).toBe(false);
     });
   });
@@ -451,7 +460,7 @@ describe('share_learning', () => {
         agentId
       );
 
-      expect(result.sharedMemoryId).toBe('new-shared-memory-id');
+      expect(result.teamMemoryId).toBe('new-shared-memory-id');
 
       // Verify metadata was not added to shared memory
       expect(mockStorage.set).toHaveBeenCalledWith(

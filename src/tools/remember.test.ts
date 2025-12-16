@@ -24,6 +24,18 @@ const createMockStorage = () => {
     disconnect: vi.fn(),
     isConnected: vi.fn(),
     ensureBucket: vi.fn(),
+    ensureUserBucket: vi.fn(),
+    ensureGlobalBucket: vi.fn(),
+    ensureBucketForScope: vi.fn(),
+    // New multi-bucket methods
+    getFromUserBucket: vi.fn().mockResolvedValue(null),
+    listFromUserBucket: vi.fn().mockResolvedValue([]),
+    keysFromUserBucket: vi.fn().mockResolvedValue([]),
+    deleteFromUserBucket: vi.fn().mockResolvedValue(false),
+    getFromGlobalBucket: vi.fn().mockResolvedValue(null),
+    listFromGlobalBucket: vi.fn().mockResolvedValue([]),
+    keysFromGlobalBucket: vi.fn().mockResolvedValue([]),
+    deleteFromGlobalBucket: vi.fn().mockResolvedValue(false),
   } as unknown as NatsKvBackend;
   return mockStorage;
 };
@@ -149,7 +161,7 @@ describe('remember tool', () => {
     it('should store a shared decisions memory', async () => {
       const input: RememberInput = {
         content: 'We decided to use React for the frontend',
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
       };
 
@@ -159,7 +171,7 @@ describe('remember tool', () => {
 
       const [key, memory, ttl] = (storage.set as any).mock.calls[0];
       expect(key).toBe(`shared/decisions/${result.memoryId}`);
-      expect(memory.scope).toBe('shared');
+      expect(memory.scope).toBe('team');
       expect(memory.category).toBe('decisions');
       expect(ttl).toBeUndefined();
     });
@@ -167,7 +179,7 @@ describe('remember tool', () => {
     it('should store a shared architecture memory', async () => {
       const input: RememberInput = {
         content: 'System uses microservices architecture',
-        scope: 'shared',
+        scope: 'team',
         category: 'architecture',
       };
 
@@ -181,7 +193,7 @@ describe('remember tool', () => {
     it('should store a shared learnings memory', async () => {
       const input: RememberInput = {
         content: 'Learned that caching improves performance',
-        scope: 'shared',
+        scope: 'team',
         category: 'learnings',
       };
 
@@ -276,10 +288,10 @@ describe('remember tool', () => {
       }
     });
 
-    it('should reject invalid scope/category: shared with recent', async () => {
+    it('should reject invalid scope/category: team with recent', async () => {
       const input: RememberInput = {
         content: 'Invalid combination',
-        scope: 'shared',
+        scope: 'team',
         category: 'recent',
       };
 
@@ -290,14 +302,14 @@ describe('remember tool', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(PatternError);
         expect((error as PatternError).code).toBe(PatternErrorCode.INVALID_CATEGORY);
-        expect((error as PatternError).message).toContain('not valid for shared scope');
+        expect((error as PatternError).message).toContain('not valid for team scope');
       }
     });
 
-    it('should reject invalid scope/category: shared with tasks', async () => {
+    it('should reject invalid scope/category: team with tasks', async () => {
       const input: RememberInput = {
         content: 'Invalid combination',
-        scope: 'shared',
+        scope: 'team',
         category: 'tasks',
       };
 
@@ -310,20 +322,20 @@ describe('remember tool', () => {
       }
     });
 
-    it('should reject invalid scope/category: shared with longterm', async () => {
+    it('should reject invalid scope/category: team with longterm', async () => {
       const input: RememberInput = {
         content: 'Invalid combination',
-        scope: 'shared',
+        scope: 'team',
         category: 'longterm',
       };
 
       await expect(remember(input, storage, projectId, agentId)).rejects.toThrow(PatternError);
     });
 
-    it('should reject invalid scope/category: shared with core', async () => {
+    it('should reject invalid scope/category: team with core', async () => {
       const input: RememberInput = {
         content: 'Invalid combination',
-        scope: 'shared',
+        scope: 'team',
         category: 'core',
       };
 
@@ -594,7 +606,7 @@ describe('remember tool', () => {
       for (const category of categories) {
         const input: RememberInput = {
           content: `Shared ${category}`,
-          scope: 'shared',
+          scope: 'team',
           category,
         };
 
@@ -621,7 +633,7 @@ describe('remember tool', () => {
     it('should generate correct key for shared memories', async () => {
       const input: RememberInput = {
         content: 'Shared memory',
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
       };
 

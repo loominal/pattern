@@ -3,6 +3,8 @@
  * Based on PLAN.md section 11.0.1
  */
 
+import type { LoominalScope } from '@loominal/shared/types';
+
 export type MemoryCategory =
   // Private categories
   | 'recent' // General short-term (24h TTL)
@@ -25,7 +27,7 @@ export interface Memory {
   id: string; // UUID v4
   agentId: string; // Creator agent GUID
   projectId: string; // Project isolation
-  scope: 'private' | 'shared';
+  scope: LoominalScope;
   category: MemoryCategory;
   content: string; // Max 32KB
   metadata?: MemoryMetadata;
@@ -37,11 +39,15 @@ export interface Memory {
 
 export interface RecallResult {
   private: Memory[];
-  shared: Memory[];
+  personal: Memory[];
+  team: Memory[];
+  public: Memory[];
   summary: string; // Concatenated key points
   counts: {
     private: number;
-    shared: number;
+    personal: number;
+    team: number;
+    public: number;
     expired: number; // Recently expired (info only)
   };
 }
@@ -104,21 +110,23 @@ export function getTTL(category: MemoryCategory): number | undefined {
 /**
  * Validate scope and category combination
  */
-export function validateScopeCategory(scope: 'private' | 'shared', category: MemoryCategory): void {
-  const sharedCategories: MemoryCategory[] = ['decisions', 'architecture', 'learnings'];
-  const privateCategories: MemoryCategory[] = ['recent', 'tasks', 'longterm', 'core'];
+export function validateScopeCategory(scope: LoominalScope, category: MemoryCategory): void {
+  const teamCategories: MemoryCategory[] = ['decisions', 'architecture', 'learnings'];
+  const individualCategories: MemoryCategory[] = ['recent', 'tasks', 'longterm', 'core'];
 
-  if (scope === 'shared' && !sharedCategories.includes(category)) {
+  // Team and public scopes should use team/shared categories
+  if ((scope === 'team' || scope === 'public') && !teamCategories.includes(category)) {
     throw new PatternError(
       PatternErrorCode.INVALID_CATEGORY,
-      `Category '${category}' is not valid for shared scope. Use one of: ${sharedCategories.join(', ')}`
+      `Category '${category}' is not valid for ${scope} scope. Use one of: ${teamCategories.join(', ')}`
     );
   }
 
-  if (scope === 'private' && !privateCategories.includes(category)) {
+  // Private and personal scopes should use individual categories
+  if ((scope === 'private' || scope === 'personal') && !individualCategories.includes(category)) {
     throw new PatternError(
       PatternErrorCode.INVALID_CATEGORY,
-      `Category '${category}' is not valid for private scope. Use one of: ${privateCategories.join(', ')}`
+      `Category '${category}' is not valid for ${scope} scope. Use one of: ${individualCategories.join(', ')}`
     );
   }
 }

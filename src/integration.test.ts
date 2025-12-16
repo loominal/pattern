@@ -116,7 +116,7 @@ describe('Multi-Agent Integration Tests', () => {
       const result = await remember(
         {
           content: 'Shared decision for all agents',
-          scope: 'shared',
+          scope: 'team',
           category: 'decisions',
         },
         storage,
@@ -128,20 +128,20 @@ describe('Multi-Agent Integration Tests', () => {
 
     it('should be visible to agent 1 (creator)', async () => {
       const context = await recallContext(storage, projectId, agent1Id, {
-        scope: 'shared',
+        scope: 'team',
       });
 
-      const found = context.shared.find((m) => m.id === sharedMemoryId);
+      const found = context.team.find((m) => m.id === sharedMemoryId);
       expect(found).toBeDefined();
       expect(found?.content).toBe('Shared decision for all agents');
     });
 
     it('should be visible to agent 2 (other agent)', async () => {
       const context = await recallContext(storage, projectId, agent2Id, {
-        scope: 'shared',
+        scope: 'team',
       });
 
-      const found = context.shared.find((m) => m.id === sharedMemoryId);
+      const found = context.team.find((m) => m.id === sharedMemoryId);
       expect(found).toBeDefined();
       expect(found?.content).toBe('Shared decision for all agents');
     });
@@ -233,23 +233,23 @@ describe('Multi-Agent Integration Tests', () => {
         {
           memoryId: privateResult.memoryId,
           category: 'learnings',
-          keepPrivate: false,
+          keepOriginal: false,
         },
         storage,
         projectId,
         agent1Id
       );
 
-      expect(shareResult.sharedMemoryId).toBeDefined();
+      expect(shareResult.teamMemoryId).toBeDefined();
       expect(shareResult.originalDeleted).toBe(true);
 
       // Verify agent 2 can see it
       const agent2Context = await recallContext(storage, projectId, agent2Id, {
-        scope: 'shared',
+        scopes: ['team'],
         categories: ['learnings'],
       });
 
-      const found = agent2Context.shared.find((m) => m.id === shareResult.sharedMemoryId);
+      const found = agent2Context.team.find((m) => m.id === shareResult.teamMemoryId);
       expect(found).toBeDefined();
       expect(found?.content).toBe('Private insight to share');
     });
@@ -267,8 +267,9 @@ describe('Multi-Agent Integration Tests', () => {
       expect(result.memoryId).toBeDefined();
 
       // Retrieve and verify no TTL
-      const key = buildKey(agent1Id, 'core', result.memoryId, 'private');
-      const memory = await storage.getFromProject(key, projectId);
+      // Core memories use 'personal' scope, stored in user bucket
+      const key = buildKey(agent1Id, 'core', result.memoryId, 'personal');
+      const memory = await storage.getFromUserBucket(key, agent1Id);
 
       expect(memory).toBeDefined();
       expect(memory?.category).toBe('core');
@@ -349,7 +350,7 @@ describe('Multi-Agent Integration Tests', () => {
     it('should isolate memories between projects', async () => {
       // Store memory in project 1
       const result1 = await remember(
-        { content: 'Project 1 only', scope: 'shared', category: 'decisions' },
+        { content: 'Project 1 only', scope: 'team', category: 'decisions' },
         storage,
         project1,
         agent1Id
@@ -357,7 +358,7 @@ describe('Multi-Agent Integration Tests', () => {
 
       // Store memory in project 2
       const result2 = await remember(
-        { content: 'Project 2 only', scope: 'shared', category: 'decisions' },
+        { content: 'Project 2 only', scope: 'team', category: 'decisions' },
         storage,
         project2,
         agent1Id
@@ -365,21 +366,21 @@ describe('Multi-Agent Integration Tests', () => {
 
       // Verify project 1 memory not in project 2
       const context2 = await recallContext(storage, project2, agent1Id, {
-        scope: 'shared',
+        scope: 'team',
       });
-      const found1In2 = context2.shared.find((m) => m.id === result1.memoryId);
+      const found1In2 = context2.team.find((m) => m.id === result1.memoryId);
       expect(found1In2).toBeUndefined();
 
       // Verify project 2 memory not in project 1
       const context1 = await recallContext(storage, project1, agent1Id, {
-        scope: 'shared',
+        scope: 'team',
       });
-      const found2In1 = context1.shared.find((m) => m.id === result2.memoryId);
+      const found2In1 = context1.team.find((m) => m.id === result2.memoryId);
       expect(found2In1).toBeUndefined();
 
       // Verify each project sees only its own memory
-      expect(context1.shared.some((m) => m.id === result1.memoryId)).toBe(true);
-      expect(context2.shared.some((m) => m.id === result2.memoryId)).toBe(true);
+      expect(context1.team.some((m) => m.id === result1.memoryId)).toBe(true);
+      expect(context2.team.some((m) => m.id === result2.memoryId)).toBe(true);
     });
   });
 });
@@ -496,7 +497,7 @@ describe('Recall Context Summary Generation', () => {
     await remember(
       {
         content: 'Shared decision: Use TypeScript for all code',
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
       },
       storage,
@@ -519,15 +520,15 @@ describe('Recall Context Summary Generation', () => {
   it('should include content from memories in summary', async () => {
     const context = await recallContext(storage, projectId, agentId, {});
 
-    // Summary should contain parts of our memories
-    expect(context.summary).toContain('coding');
+    // Summary should contain parts of our memories (longterm or decisions)
+    expect(context.summary).toContain('tests');
   });
 
   it('should provide accurate counts', async () => {
     const context = await recallContext(storage, projectId, agentId, {});
 
     expect(context.counts.private).toBeGreaterThan(0);
-    expect(context.counts.shared).toBeGreaterThan(0);
+    expect(context.counts.team).toBeGreaterThan(0);
     expect(typeof context.counts.expired).toBe('number');
   });
 });

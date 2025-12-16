@@ -15,6 +15,13 @@ import type { Memory } from '../types.js';
 import { PatternError, PatternErrorCode } from '../types.js';
 import type { StorageBackend } from './interface.js';
 import { createLogger } from '../logger.js';
+import {
+  getUserBucket,
+  getProjectBucket,
+  getGlobalBucket,
+  selectBucket,
+  type LoominalScope,
+} from '@loominal/shared/types';
 
 const logger = createLogger('nats-kv-backend');
 
@@ -97,16 +104,31 @@ async function connectWebSocket(opts: ConnectionOptions): Promise<NatsConnection
 /**
  * NATS KV backend implementation
  *
- * Bucket naming: loom-pattern-{projectId}
- * Key format: {scope}/{category}/{memoryId} or agents/{agentId}/{category}/{memoryId}
+ * Supports multi-bucket operations based on unified scope model:
+ * - Project bucket: loom-pattern-{projectId} (for private and team scopes)
+ * - User bucket: loom-user-{agentId} (for personal scope)
+ * - Global bucket: loom-global-pattern (for public scope)
+ *
+ * Key format within buckets:
+ * - agents/{agentId}/{category}/{memoryId} (for private/personal)
+ * - shared/{category}/{memoryId} (for team/public)
  */
 export class NatsKvBackend implements StorageBackend {
   private connection: NatsConnection | null = null;
   private buckets: Map<string, KV> = new Map();
   private natsUrl: string;
+  private agentId: string | null = null;
 
-  constructor(natsUrl: string) {
+  constructor(natsUrl: string, agentId?: string) {
     this.natsUrl = natsUrl;
+    this.agentId = agentId ?? null;
+  }
+
+  /**
+   * Set the agent ID (required for personal scope operations)
+   */
+  setAgentId(agentId: string): void {
+    this.agentId = agentId;
   }
 
   async connect(): Promise<void> {
@@ -181,17 +203,39 @@ export class NatsKvBackend implements StorageBackend {
   }
 
   /**
-   * Ensure bucket exists for a project
+   * Ensure bucket exists for a project (private and team scopes)
    */
   async ensureBucket(projectId: string): Promise<void> {
+    const bucketName = getProjectBucket('pattern', projectId);
+    await this.ensureBucketByName(bucketName);
+  }
+
+  /**
+   * Ensure user bucket exists (personal scope)
+   */
+  async ensureUserBucket(agentId: string): Promise<void> {
+    const bucketName = getUserBucket(agentId);
+    await this.ensureBucketByName(bucketName);
+  }
+
+  /**
+   * Ensure global bucket exists (public scope)
+   */
+  async ensureGlobalBucket(): Promise<void> {
+    const bucketName = getGlobalBucket('pattern');
+    await this.ensureBucketByName(bucketName);
+  }
+
+  /**
+   * Internal method to ensure any bucket exists by name
+   */
+  private async ensureBucketByName(bucketName: string): Promise<void> {
     if (!this.connection) {
       throw new PatternError(
         PatternErrorCode.NATS_ERROR,
         'Not connected to NATS. Call connect() first.'
       );
     }
-
-    const bucketName = `loom-pattern-${projectId}`;
 
     // Check if already cached
     if (this.buckets.has(bucketName)) {
@@ -253,7 +297,7 @@ export class NatsKvBackend implements StorageBackend {
    * Get bucket for a project (throws if not initialized)
    */
   private getBucket(projectId: string): KV {
-    const bucketName = `loom-pattern-${projectId}`;
+    const bucketName = getProjectBucket('pattern', projectId);
     const bucket = this.buckets.get(bucketName);
     if (!bucket) {
       throw new PatternError(
@@ -262,6 +306,38 @@ export class NatsKvBackend implements StorageBackend {
       );
     }
     return bucket;
+  }
+
+  /**
+   * Get bucket by name (throws if not initialized)
+   */
+  private getBucketByName(bucketName: string): KV {
+    const bucket = this.buckets.get(bucketName);
+    if (!bucket) {
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Bucket not initialized: ${bucketName}. Call appropriate ensure method first.`
+      );
+    }
+    return bucket;
+  }
+
+  /**
+   * Select the appropriate bucket based on scope and return bucket + key
+   */
+  private selectBucketForScope(
+    scope: LoominalScope,
+    projectId: string,
+    agentId: string
+  ): { bucket: KV; bucketName: string } {
+    const selection = selectBucket(scope, {
+      feature: 'pattern',
+      agentId,
+      projectId,
+    });
+
+    const bucket = this.getBucketByName(selection.bucket);
+    return { bucket, bucketName: selection.bucket };
   }
 
   async get(_key: string): Promise<Memory | null> {
@@ -275,8 +351,33 @@ export class NatsKvBackend implements StorageBackend {
     );
   }
 
+  /**
+   * Ensure the correct bucket exists based on memory scope
+   */
+  async ensureBucketForScope(scope: LoominalScope, projectId: string, agentId: string): Promise<void> {
+    switch (scope) {
+      case 'private':
+      case 'team':
+        await this.ensureBucket(projectId);
+        break;
+      case 'personal':
+        await this.ensureUserBucket(agentId);
+        break;
+      case 'public':
+        await this.ensureGlobalBucket();
+        break;
+    }
+  }
+
   async set(_key: string, memory: Memory, ttl?: number): Promise<void> {
-    const bucket = this.getBucket(memory.projectId);
+    // Ensure the correct bucket exists based on scope
+    await this.ensureBucketForScope(memory.scope, memory.projectId, memory.agentId);
+
+    const { bucket, bucketName } = this.selectBucketForScope(
+      memory.scope,
+      memory.projectId,
+      memory.agentId
+    );
 
     try {
       const payload = JSON.stringify(memory);
@@ -294,12 +395,14 @@ export class NatsKvBackend implements StorageBackend {
         logger.debug('Stored memory (TTL managed by application)', {
           key,
           ttl,
-          projectId: memory.projectId,
+          scope: memory.scope,
+          bucket: bucketName,
         });
       } else {
         logger.debug('Stored memory', {
           key,
-          projectId: memory.projectId,
+          scope: memory.scope,
+          bucket: bucketName,
         });
       }
     } catch (err) {
@@ -491,6 +594,342 @@ export class NatsKvBackend implements StorageBackend {
         prefix,
         projectId,
       });
+    }
+  }
+
+  // ============================================================================
+  // User Bucket Methods (for personal scope)
+  // ============================================================================
+
+  /**
+   * Get user bucket by agent ID (ensures it exists first)
+   */
+  private getUserBucketByAgentId(agentId: string): KV {
+    const bucketName = getUserBucket(agentId);
+    return this.getBucketByName(bucketName);
+  }
+
+  /**
+   * Get a memory from user bucket (for personal scope)
+   */
+  async getFromUserBucket(key: string, agentId: string): Promise<Memory | null> {
+    await this.ensureUserBucket(agentId);
+    const bucket = this.getUserBucketByAgentId(agentId);
+
+    try {
+      const entry = await bucket.get(key);
+
+      if (!entry || !entry.value) {
+        return null;
+      }
+
+      const valueStr = entry.string();
+      if (!valueStr || valueStr.trim() === '') {
+        return null;
+      }
+
+      const data = JSON.parse(valueStr) as Memory;
+      logger.debug('Retrieved memory from user bucket', { key, agentId });
+      return data;
+    } catch (err) {
+      const error = err as Error;
+      if (
+        error.message?.includes('not found') ||
+        error.message?.includes('no message found') ||
+        error.message?.includes('Unexpected end of JSON input')
+      ) {
+        logger.debug('Memory not found in user bucket', { key, agentId });
+        return null;
+      }
+      logger.error('Failed to get memory from user bucket', { key, agentId, error: error.message });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to get memory from user bucket: ${error.message}`,
+        { key, agentId }
+      );
+    }
+  }
+
+  /**
+   * List all memories matching a prefix from user bucket (for personal scope)
+   */
+  async listFromUserBucket(prefix: string, agentId: string): Promise<Memory[]> {
+    await this.ensureUserBucket(agentId);
+    const bucket = this.getUserBucketByAgentId(agentId);
+    const memories: Memory[] = [];
+
+    try {
+      const keyIterator = await bucket.keys();
+      const keyArray: string[] = [];
+      for await (const key of keyIterator) {
+        if (key.startsWith(prefix)) {
+          keyArray.push(key);
+        }
+      }
+
+      logger.debug('Collected keys from user bucket', {
+        keyCount: keyArray.length,
+        prefix,
+        agentId,
+      });
+
+      for (const key of keyArray) {
+        try {
+          const memory = await this.getFromUserBucket(key, agentId);
+          if (memory) {
+            memories.push(memory);
+          }
+        } catch (err) {
+          const error = err as Error;
+          logger.warn('Failed to get memory during list from user bucket', {
+            key,
+            agentId,
+            error: error.message,
+          });
+        }
+      }
+
+      logger.debug('Listed memories from user bucket', { count: memories.length, prefix, agentId });
+      return memories;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to list memories from user bucket', {
+        prefix,
+        agentId,
+        error: error.message,
+      });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to list memories from user bucket: ${error.message}`,
+        { prefix, agentId }
+      );
+    }
+  }
+
+  /**
+   * List all keys matching a prefix from user bucket (for personal scope)
+   */
+  async keysFromUserBucket(prefix: string, agentId: string): Promise<string[]> {
+    await this.ensureUserBucket(agentId);
+    const bucket = this.getUserBucketByAgentId(agentId);
+    const keys: string[] = [];
+
+    try {
+      const keyIterator = await bucket.keys();
+      for await (const key of keyIterator) {
+        if (key.startsWith(prefix)) {
+          keys.push(key);
+        }
+      }
+
+      logger.debug('Listed keys from user bucket', { count: keys.length, prefix, agentId });
+      return keys;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to list keys from user bucket', {
+        prefix,
+        agentId,
+        error: error.message,
+      });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to list keys from user bucket: ${error.message}`,
+        { prefix, agentId }
+      );
+    }
+  }
+
+  /**
+   * Delete a memory from user bucket (for personal scope)
+   */
+  async deleteFromUserBucket(key: string, agentId: string): Promise<boolean> {
+    await this.ensureUserBucket(agentId);
+    const bucket = this.getUserBucketByAgentId(agentId);
+
+    try {
+      const exists = await this.getFromUserBucket(key, agentId);
+      if (!exists) {
+        logger.debug('Memory not found for deletion in user bucket', { key, agentId });
+        return false;
+      }
+
+      await bucket.delete(key);
+      logger.debug('Deleted memory from user bucket', { key, agentId });
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to delete memory from user bucket', { key, agentId, error: error.message });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to delete memory from user bucket: ${error.message}`,
+        { key, agentId }
+      );
+    }
+  }
+
+  // ============================================================================
+  // Global Bucket Methods (for public scope)
+  // ============================================================================
+
+  /**
+   * Get global bucket (ensures it exists first)
+   */
+  private getGlobalBucketForPattern(): KV {
+    const bucketName = getGlobalBucket('pattern');
+    return this.getBucketByName(bucketName);
+  }
+
+  /**
+   * Get a memory from global bucket (for public scope)
+   */
+  async getFromGlobalBucket(key: string): Promise<Memory | null> {
+    await this.ensureGlobalBucket();
+    const bucket = this.getGlobalBucketForPattern();
+
+    try {
+      const entry = await bucket.get(key);
+
+      if (!entry || !entry.value) {
+        return null;
+      }
+
+      const valueStr = entry.string();
+      if (!valueStr || valueStr.trim() === '') {
+        return null;
+      }
+
+      const data = JSON.parse(valueStr) as Memory;
+      logger.debug('Retrieved memory from global bucket', { key });
+      return data;
+    } catch (err) {
+      const error = err as Error;
+      if (
+        error.message?.includes('not found') ||
+        error.message?.includes('no message found') ||
+        error.message?.includes('Unexpected end of JSON input')
+      ) {
+        logger.debug('Memory not found in global bucket', { key });
+        return null;
+      }
+      logger.error('Failed to get memory from global bucket', { key, error: error.message });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to get memory from global bucket: ${error.message}`,
+        { key }
+      );
+    }
+  }
+
+  /**
+   * List all memories matching a prefix from global bucket (for public scope)
+   */
+  async listFromGlobalBucket(prefix: string): Promise<Memory[]> {
+    await this.ensureGlobalBucket();
+    const bucket = this.getGlobalBucketForPattern();
+    const memories: Memory[] = [];
+
+    try {
+      const keyIterator = await bucket.keys();
+      const keyArray: string[] = [];
+      for await (const key of keyIterator) {
+        if (key.startsWith(prefix)) {
+          keyArray.push(key);
+        }
+      }
+
+      logger.debug('Collected keys from global bucket', {
+        keyCount: keyArray.length,
+        prefix,
+      });
+
+      for (const key of keyArray) {
+        try {
+          const memory = await this.getFromGlobalBucket(key);
+          if (memory) {
+            memories.push(memory);
+          }
+        } catch (err) {
+          const error = err as Error;
+          logger.warn('Failed to get memory during list from global bucket', {
+            key,
+            error: error.message,
+          });
+        }
+      }
+
+      logger.debug('Listed memories from global bucket', { count: memories.length, prefix });
+      return memories;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to list memories from global bucket', {
+        prefix,
+        error: error.message,
+      });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to list memories from global bucket: ${error.message}`,
+        { prefix }
+      );
+    }
+  }
+
+  /**
+   * List all keys matching a prefix from global bucket (for public scope)
+   */
+  async keysFromGlobalBucket(prefix: string): Promise<string[]> {
+    await this.ensureGlobalBucket();
+    const bucket = this.getGlobalBucketForPattern();
+    const keys: string[] = [];
+
+    try {
+      const keyIterator = await bucket.keys();
+      for await (const key of keyIterator) {
+        if (key.startsWith(prefix)) {
+          keys.push(key);
+        }
+      }
+
+      logger.debug('Listed keys from global bucket', { count: keys.length, prefix });
+      return keys;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to list keys from global bucket', {
+        prefix,
+        error: error.message,
+      });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to list keys from global bucket: ${error.message}`,
+        { prefix }
+      );
+    }
+  }
+
+  /**
+   * Delete a memory from global bucket (for public scope)
+   */
+  async deleteFromGlobalBucket(key: string): Promise<boolean> {
+    await this.ensureGlobalBucket();
+    const bucket = this.getGlobalBucketForPattern();
+
+    try {
+      const exists = await this.getFromGlobalBucket(key);
+      if (!exists) {
+        logger.debug('Memory not found for deletion in global bucket', { key });
+        return false;
+      }
+
+      await bucket.delete(key);
+      logger.debug('Deleted memory from global bucket', { key });
+      return true;
+    } catch (err) {
+      const error = err as Error;
+      logger.error('Failed to delete memory from global bucket', { key, error: error.message });
+      throw new PatternError(
+        PatternErrorCode.NATS_ERROR,
+        `Failed to delete memory from global bucket: ${error.message}`,
+        { key }
+      );
     }
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import type { LoominalScope } from '@loominal/shared/types';
 import type { NatsKvBackend } from '../storage/nats-kv.js';
 import type { Memory, MemoryCategory, MemoryMetadata } from '../types.js';
 import { PatternError, PatternErrorCode, validateScopeCategory, getTTL } from '../types.js';
@@ -11,7 +12,7 @@ import { buildKey } from '../storage/interface.js';
 
 export interface RememberInput {
   content: string; // Max 32KB
-  scope?: 'private' | 'shared'; // default: 'private'
+  scope?: LoominalScope; // default: 'private'
   category?: MemoryCategory; // default: 'recent'
   metadata?: MemoryMetadata;
 }

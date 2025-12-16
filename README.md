@@ -36,11 +36,12 @@ For agents running on multiple machines that should share the same identity and 
 
 Sub-agents (spawned by root agents for specialized tasks) can access their parent's memories:
 
-| Parent Memory Type | Sub-Agent Access |
-|-------------------|------------------|
-| `recent`, `tasks`, `longterm` | Read access |
-| `core` | No access (identity-defining, protected) |
-| `shared` | Full read/write |
+| Parent Memory Scope | Sub-Agent Access |
+|---------------------|------------------|
+| `private` (`recent`, `tasks`, `longterm`) | Read access |
+| `personal` (`core`) | No access (identity-defining, protected) |
+| `team` | Full read/write |
+| `public` | Full read/write |
 
 ## Quick Start
 
@@ -103,22 +104,33 @@ Add to your Claude Code MCP settings (`~/.claude/settings.json`):
 
 ## Memory Model
 
-### Private Memories (Agent-Specific)
+### Unified Scope System
 
-| Category | TTL | Description |
-|----------|-----|-------------|
-| `recent` | 24h | Short-term observations and learnings |
-| `tasks` | 24h | Current work items and todos |
-| `longterm` | None | Permanent insights worth keeping |
-| `core` | None | Identity-defining memories (protected) |
+Pattern uses a 4-value scope system that determines both visibility and storage location:
 
-### Shared Memories (Project-Wide)
+| Scope | Visibility | Storage | Use Case |
+|-------|------------|---------|----------|
+| `private` | Just this agent, this project | Project bucket | Working notes, temp observations |
+| `personal` | Just this agent, everywhere | User bucket | Profile, preferences, cross-project identity |
+| `team` | All agents in this project | Project bucket | Project decisions, shared learnings |
+| `public` | All agents everywhere | Global bucket | Global knowledge, public templates |
 
-| Category | Description |
-|----------|-------------|
-| `decisions` | Project decisions and rationale |
-| `architecture` | Architecture choices and patterns |
-| `learnings` | Knowledge shared across agents |
+### Private/Personal Categories (Agent-Specific)
+
+| Category | TTL | Default Scope | Description |
+|----------|-----|---------------|-------------|
+| `recent` | 24h | `private` | Short-term observations and learnings |
+| `tasks` | 24h | `private` | Current work items and todos |
+| `longterm` | None | `private` | Permanent insights worth keeping |
+| `core` | None | `personal` | Identity-defining memories (follows user across projects) |
+
+### Team/Public Categories (Shared)
+
+| Category | Scope | Description |
+|----------|-------|-------------|
+| `decisions` | `team` | Project decisions and rationale |
+| `architecture` | `team` | Architecture choices and patterns |
+| `learnings` | `team` | Knowledge shared across agents |
 
 ## MCP Tools
 
@@ -129,7 +141,7 @@ Store a new memory with specified scope and category.
 ```json
 {
   "content": "The API uses REST with JSON responses",
-  "scope": "private",
+  "scope": "private",  // "private" | "personal" | "team" | "public"
   "category": "longterm",
   "metadata": {
     "tags": ["api", "architecture"],
@@ -171,7 +183,7 @@ Promote a temporary memory to permanent storage.
 
 ### `core-memory`
 
-Store an identity-defining memory (use sparingly, max 100 per agent).
+Store an identity-defining memory with `personal` scope (follows user across projects, max 100 per agent).
 
 ```json
 {
@@ -196,7 +208,7 @@ Retrieve memory context at session start.
 
 ```json
 {
-  "scope": "both",
+  "scopes": ["private", "personal", "team"],
   "categories": ["core", "longterm", "decisions"],
   "limit": 50,
   "since": "2025-01-01T00:00:00Z"
@@ -207,11 +219,15 @@ Returns:
 ```json
 {
   "private": [...],
-  "shared": [...],
+  "personal": [...],
+  "team": [...],
+  "public": [...],
   "summary": "Key points from your memories...",
   "counts": {
     "private": 25,
-    "shared": 10,
+    "personal": 5,
+    "team": 10,
+    "public": 0,
     "expired": 5
   }
 }
@@ -219,13 +235,13 @@ Returns:
 
 ### `share-learning`
 
-Share a private memory with all project agents.
+Share a private/personal memory with all project agents (moves to `team` scope).
 
 ```json
 {
   "memoryId": "550e8400-e29b-41d4-a716-446655440000",
   "category": "learnings",
-  "keepPrivate": false
+  "keepOriginal": false
 }
 ```
 
@@ -315,7 +331,10 @@ flowchart TB
 ## Key Design Decisions
 
 - **Unified Identity**: Pattern reads identity from Warp's NATS KV store instead of generating ephemeral UUIDs. Same computer + same folder = same agent across restarts.
-- **Project Isolation**: Each project gets its own NATS KV bucket
+- **Unified Scope Model**: 4-value scope (`private`, `personal`, `team`, `public`) shared with Warp and Weft for consistent semantics
+- **Multi-Bucket Storage**: Different scopes route to different NATS KV buckets (project bucket, user bucket, global bucket)
+- **Project Isolation**: Each project gets its own NATS KV bucket for `private` and `team` scope
+- **Personal Memories**: Core memories use `personal` scope, stored in user bucket, accessible across all projects
 - **Agent Privacy**: Private memories keyed by agentId, never visible to others
 - **TTL Management**: Application-level expiration (NATS KV doesn't support per-key TTL)
 - **Summary Generation**: 4KB max summary from prioritized memories

@@ -1,6 +1,7 @@
 /**
  * MCP tool: core-memory
  * Store identity-defining memory in the 'core' category (no TTL, protected)
+ * Uses 'personal' scope so core memories follow the user across projects
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -52,8 +53,9 @@ export async function coreMemory(
   }
 
   // Check core memory limit
-  const corePrefix = `agents/${agentId}/core/`;
-  const existingCoreMemories = await storage.keysFromProject(corePrefix, projectId);
+  // Core memories use 'personal' scope, so they're stored in user bucket
+  const corePrefix = `pattern.agents/${agentId}/core/`;
+  const existingCoreMemories = await storage.keysFromUserBucket(corePrefix, agentId);
 
   if (existingCoreMemories.length >= MAX_CORE_MEMORIES) {
     throw new PatternError(
@@ -71,12 +73,13 @@ export async function coreMemory(
   const memoryId = uuidv4();
 
   // Create memory object
+  // Use 'personal' scope so core memories follow the user across projects
   const now = new Date().toISOString();
   const memory: Memory = {
     id: memoryId,
     agentId,
     projectId,
-    scope: 'private',
+    scope: 'personal',
     category: 'core',
     content: input.content,
     ...(input.metadata && { metadata: input.metadata }),
@@ -87,7 +90,7 @@ export async function coreMemory(
   };
 
   // Build storage key
-  const key = buildKey(agentId, 'core', memoryId, 'private');
+  const key = buildKey(agentId, 'core', memoryId, 'personal');
 
   // Store in NATS KV (no TTL)
   await storage.set(key, memory);

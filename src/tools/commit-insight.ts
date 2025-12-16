@@ -1,8 +1,10 @@
 /**
  * MCP tool: commit-insight
  * Promote a temporary memory (recent/tasks) to permanent storage (longterm)
+ * Can optionally change scope during promotion (e.g., private to personal)
  */
 
+import type { LoominalScope } from '@loominal/shared/types';
 import type { NatsKvBackend } from '../storage/nats-kv.js';
 import { PatternError, PatternErrorCode } from '../types.js';
 import { buildKey } from '../storage/interface.js';
@@ -10,21 +12,25 @@ import { buildKey } from '../storage/interface.js';
 export interface CommitInsightInput {
   memoryId: string;
   newContent?: string; // Optional content update
+  targetScope?: LoominalScope; // Optional scope change (default: keep original scope)
 }
 
 export interface CommitInsightOutput {
   memoryId: string;
   previousCategory: string;
+  previousScope: LoominalScope;
+  newScope: LoominalScope;
 }
 
 /**
  * Commit insight tool handler
  * Moves a memory from 'recent' or 'tasks' to 'longterm' category (removes TTL)
+ * Can optionally change scope (e.g., from private to personal for cross-project insights)
  * @param input - Tool input parameters
  * @param storage - NATS KV storage backend
  * @param projectId - Current project ID
  * @param agentId - Current agent ID
- * @returns Memory ID and previous category
+ * @returns Memory ID, previous category, and scope information
  */
 export async function commitInsight(
   input: CommitInsightInput,
@@ -37,20 +43,25 @@ export async function commitInsight(
     throw new PatternError(PatternErrorCode.VALIDATION_ERROR, 'Memory ID cannot be empty');
   }
 
-  // Search for the memory in 'recent' and 'tasks' categories (only private scope)
+  // Search for the memory in 'recent' and 'tasks' categories
+  // Search both private and personal scopes
   const categoriesToSearch = ['recent', 'tasks'];
+  const scopesToSearch: LoominalScope[] = ['private', 'personal'];
   let foundMemory = null;
   let foundKey = '';
 
-  for (const category of categoriesToSearch) {
-    const key = buildKey(agentId, category, input.memoryId, 'private');
-    const memory = await storage.getFromProject(key, projectId);
+  for (const scope of scopesToSearch) {
+    for (const category of categoriesToSearch) {
+      const key = buildKey(agentId, category, input.memoryId, scope);
+      const memory = await storage.getFromProject(key, projectId);
 
-    if (memory) {
-      foundMemory = memory;
-      foundKey = key;
-      break;
+      if (memory) {
+        foundMemory = memory;
+        foundKey = key;
+        break;
+      }
     }
+    if (foundMemory) break;
   }
 
   // If not found, return error
@@ -79,12 +90,26 @@ export async function commitInsight(
     );
   }
 
-  // Store previous category for output
+  // Store previous category and scope for output
   const previousCategory = foundMemory.category;
+  const previousScope = foundMemory.scope;
+
+  // Determine target scope (default to original scope if not specified)
+  const targetScope = input.targetScope ?? previousScope;
+
+  // Validate target scope is appropriate for longterm category
+  if (targetScope !== 'private' && targetScope !== 'personal') {
+    throw new PatternError(
+      PatternErrorCode.VALIDATION_ERROR,
+      `Target scope must be 'private' or 'personal' for longterm memories`,
+      { targetScope }
+    );
+  }
 
   // Update memory object
   const now = new Date().toISOString();
   foundMemory.category = 'longterm';
+  foundMemory.scope = targetScope;
   foundMemory.updatedAt = now;
   // Remove TTL - delete the expiresAt property if it exists
   if ('expiresAt' in foundMemory) {
@@ -96,8 +121,8 @@ export async function commitInsight(
     foundMemory.content = input.newContent;
   }
 
-  // Build new key for longterm category
-  const newKey = buildKey(agentId, 'longterm', input.memoryId, 'private');
+  // Build new key for longterm category with target scope
+  const newKey = buildKey(agentId, 'longterm', input.memoryId, targetScope);
 
   // Store in new location (no TTL)
   await storage.set(newKey, foundMemory);
@@ -109,5 +134,7 @@ export async function commitInsight(
   return {
     memoryId: input.memoryId,
     previousCategory,
+    previousScope,
+    newScope: targetScope,
   };
 }

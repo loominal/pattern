@@ -16,8 +16,9 @@ describe('core-memory tool', () => {
   beforeEach(() => {
     // Create mock storage
     mockStorage = {
-      keysFromProject: vi.fn(),
+      keysFromUserBucket: vi.fn(),
       set: vi.fn(),
+      ensureUserBucket: vi.fn().mockResolvedValue(undefined),
     } as unknown as NatsKvBackend;
   });
 
@@ -28,7 +29,7 @@ describe('core-memory tool', () => {
   describe('Happy Path Scenarios', () => {
     it('should create a core memory with valid content', async () => {
       // Mock no existing core memories
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -42,20 +43,20 @@ describe('core-memory tool', () => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
 
-      // Verify keysFromProject was called to check limit
-      expect(mockStorage.keysFromProject).toHaveBeenCalledWith(
-        `agents/${agentId}/core/`,
-        projectId
+      // Verify keysFromUserBucket was called to check limit (personal scope uses user bucket)
+      expect(mockStorage.keysFromUserBucket).toHaveBeenCalledWith(
+        `pattern.agents/${agentId}/core/`,
+        agentId
       );
 
-      // Verify memory was stored
+      // Verify memory was stored with personal scope (core memories follow user)
       expect(mockStorage.set).toHaveBeenCalledWith(
         `agents/${agentId}/core/${result.memoryId}`,
         expect.objectContaining({
           id: result.memoryId,
           agentId,
           projectId,
-          scope: 'private',
+          scope: 'personal',
           category: 'core',
           content: 'I am Claude, an AI assistant created by Anthropic.',
           version: 1,
@@ -72,7 +73,7 @@ describe('core-memory tool', () => {
     });
 
     it('should create a core memory with metadata', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -103,7 +104,7 @@ describe('core-memory tool', () => {
     });
 
     it('should set createdAt and updatedAt timestamps', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const beforeTime = Date.now();
@@ -135,7 +136,7 @@ describe('core-memory tool', () => {
         { length: 99 },
         (_, i) => `agents/${agentId}/core/memory-${i}`
       );
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue(existingKeys);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -149,7 +150,7 @@ describe('core-memory tool', () => {
     });
 
     it('should handle long content (up to 32KB)', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       // Create content that is close to but under 32KB
@@ -245,7 +246,7 @@ describe('core-memory tool', () => {
         { length: 100 },
         (_, i) => `agents/${agentId}/core/memory-${i}`
       );
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue(existingKeys);
 
       const input: CoreMemoryInput = {
         content: 'One too many',
@@ -275,7 +276,7 @@ describe('core-memory tool', () => {
         { length: 150 },
         (_, i) => `agents/${agentId}/core/memory-${i}`
       );
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue(existingKeys);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue(existingKeys);
 
       const input: CoreMemoryInput = {
         content: 'Cannot add',
@@ -297,7 +298,7 @@ describe('core-memory tool', () => {
 
   describe('Edge Cases', () => {
     it('should handle content exactly at 32KB limit', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       // Create content that is exactly 32KB
@@ -331,7 +332,7 @@ describe('core-memory tool', () => {
     });
 
     it('should handle metadata with empty arrays', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -357,7 +358,7 @@ describe('core-memory tool', () => {
     });
 
     it('should not include metadata property when metadata is undefined', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -373,12 +374,12 @@ describe('core-memory tool', () => {
     });
 
     it('should handle metadata with all priority levels', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       for (const priority of [1, 2, 3] as const) {
         vi.clearAllMocks();
-        vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+        vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
         vi.mocked(mockStorage.set).mockResolvedValue();
 
         const input: CoreMemoryInput = {
@@ -403,7 +404,7 @@ describe('core-memory tool', () => {
     });
 
     it('should generate unique UUIDs for each memory', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const ids = new Set<string>();
@@ -423,7 +424,7 @@ describe('core-memory tool', () => {
     });
 
     it('should always set version to 1', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -437,8 +438,8 @@ describe('core-memory tool', () => {
       expect(storedMemory.version).toBe(1);
     });
 
-    it('should always set scope to private', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+    it('should always set scope to personal (core memories follow user)', async () => {
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {
@@ -449,11 +450,11 @@ describe('core-memory tool', () => {
 
       const setCall = vi.mocked(mockStorage.set).mock.calls[0];
       const storedMemory = setCall[1] as Memory;
-      expect(storedMemory.scope).toBe('private');
+      expect(storedMemory.scope).toBe('personal');
     });
 
     it('should always set category to core', async () => {
-      vi.mocked(mockStorage.keysFromProject).mockResolvedValue([]);
+      vi.mocked(mockStorage.keysFromUserBucket).mockResolvedValue([]);
       vi.mocked(mockStorage.set).mockResolvedValue();
 
       const input: CoreMemoryInput = {

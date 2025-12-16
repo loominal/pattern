@@ -10,8 +10,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe('Storage Helper Functions', () => {
   describe('buildKey', () => {
-    it('should build shared key correctly', () => {
-      const key = buildKey('agent-123', 'decisions', 'mem-456', 'shared');
+    it('should build team/public key correctly (shared prefix)', () => {
+      const key = buildKey('agent-123', 'decisions', 'mem-456', 'team');
       expect(key).toBe('shared/decisions/mem-456');
     });
 
@@ -20,29 +20,34 @@ describe('Storage Helper Functions', () => {
       expect(key).toBe('agents/agent-123/tasks/mem-789');
     });
 
-    it('should build core memory key correctly', () => {
-      const key = buildKey('agent-abc', 'core', 'mem-xyz', 'private');
+    it('should build core memory key correctly (personal scope uses same key format)', () => {
+      const key = buildKey('agent-abc', 'core', 'mem-xyz', 'personal');
       expect(key).toBe('agents/agent-abc/core/mem-xyz');
+    });
+
+    it('should build public scope key correctly (shared prefix)', () => {
+      const key = buildKey('agent-123', 'learnings', 'mem-123', 'public');
+      expect(key).toBe('shared/learnings/mem-123');
     });
   });
 
   describe('parseKey', () => {
-    it('should parse shared key correctly', () => {
+    it('should parse shared key correctly (team/public scope)', () => {
       const parsed = parseKey('shared/decisions/mem-456');
       expect(parsed).toEqual({
         category: 'decisions',
         memoryId: 'mem-456',
-        scope: 'shared',
+        isShared: true,
       });
     });
 
-    it('should parse private key correctly', () => {
+    it('should parse private/personal key correctly', () => {
       const parsed = parseKey('agents/agent-123/tasks/mem-789');
       expect(parsed).toEqual({
         agentId: 'agent-123',
         category: 'tasks',
         memoryId: 'mem-789',
-        scope: 'private',
+        isShared: false,
       });
     });
 
@@ -126,20 +131,20 @@ describe('NatsKvBackend Integration', () => {
       expect(retrieved).toEqual(memory);
     });
 
-    it('should store and retrieve a shared memory', async () => {
+    it('should store and retrieve a team memory', async () => {
       const memory: Memory = {
         id: uuidv4(),
         agentId,
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
-        content: 'Shared decision',
+        content: 'Team decision',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         version: 1,
       };
 
-      const key = buildKey(agentId, 'decisions', memory.id, 'shared');
+      const key = buildKey(agentId, 'decisions', memory.id, 'team');
       await backend.set(key, memory);
 
       const retrieved = await backend.getFromProject(key, projectId);

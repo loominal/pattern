@@ -1,6 +1,6 @@
 /**
  * Share Learning Tool
- * Shares private memory with all project agents by converting to shared scope
+ * Shares private/personal memory with all project agents by converting to team scope
  */
 
 import { v4 as uuidv4 } from 'uuid';
@@ -15,22 +15,22 @@ const logger = createLogger('share-learning');
 export interface ShareLearningInput {
   memoryId: string;
   category?: 'decisions' | 'architecture' | 'learnings'; // default: 'learnings'
-  keepPrivate?: boolean; // default: false. If true, copy; if false, move
+  keepOriginal?: boolean; // default: false. If true, copy; if false, move
 }
 
 export interface ShareLearningOutput {
-  sharedMemoryId: string;
+  teamMemoryId: string;
   originalDeleted: boolean;
 }
 
 /**
- * Share a private memory with all project agents
+ * Share a private/personal memory with all project agents (team scope)
  *
  * @param input - Input parameters
  * @param storage - Storage backend instance
  * @param projectId - Project ID for isolation
  * @param agentId - Agent ID of the caller
- * @returns Output with new shared memory ID and deletion status
+ * @returns Output with new team memory ID and deletion status
  */
 export async function shareLearning(
   input: ShareLearningInput,
@@ -38,24 +38,25 @@ export async function shareLearning(
   projectId: string,
   agentId: string
 ): Promise<ShareLearningOutput> {
-  const { memoryId, category = 'learnings', keepPrivate = false } = input;
+  const { memoryId, category = 'learnings', keepOriginal = false } = input;
 
-  logger.info('Sharing learning', { memoryId, category, keepPrivate, agentId, projectId });
+  logger.info('Sharing learning', { memoryId, category, keepOriginal, agentId, projectId });
 
-  // Validate category is a shared category
+  // Validate category is a team category
   if (!isSharedCategory(category)) {
     throw new PatternError(
       PatternErrorCode.INVALID_CATEGORY,
-      `Category '${category}' is not a valid shared category. Use one of: decisions, architecture, learnings`
+      `Category '${category}' is not a valid team category. Use one of: decisions, architecture, learnings`
     );
   }
 
-  // Try to find the private memory by scanning all private categories
-  const privateCategories: MemoryCategory[] = ['recent', 'tasks', 'longterm', 'core'];
+  // Try to find the original memory by scanning all individual categories
+  const individualCategories: MemoryCategory[] = ['recent', 'tasks', 'longterm', 'core'];
   let originalMemory: Memory | null = null;
   let originalKey: string | null = null;
 
-  for (const privCategory of privateCategories) {
+  // Search in private scope first
+  for (const privCategory of individualCategories) {
     const key = buildKey(agentId, privCategory, memoryId, 'private');
     const memory = await storage.getFromProject(key, projectId);
     if (memory) {
@@ -65,10 +66,25 @@ export async function shareLearning(
     }
   }
 
+  // Search in personal scope if not found (for core memories - stored in user bucket)
+  let foundInUserBucket = false;
+  if (!originalMemory) {
+    for (const privCategory of individualCategories) {
+      const key = `pattern.${buildKey(agentId, privCategory, memoryId, 'personal')}`;
+      const memory = await storage.getFromUserBucket(key, agentId);
+      if (memory) {
+        originalMemory = memory;
+        originalKey = key;
+        foundInUserBucket = true;
+        break;
+      }
+    }
+  }
+
   if (!originalMemory || !originalKey) {
     throw new PatternError(
       PatternErrorCode.MEMORY_NOT_FOUND,
-      `Private memory with ID '${memoryId}' not found`,
+      `Memory with ID '${memoryId}' not found in private or personal scope`,
       { memoryId, agentId }
     );
   }
@@ -83,14 +99,14 @@ export async function shareLearning(
     );
   }
 
-  // Create a new shared memory with the content
+  // Create a new team memory with the content
   const now = new Date().toISOString();
   const newMemoryId = uuidv4();
-  const sharedMemory: Memory = {
+  const teamMemory: Memory = {
     id: newMemoryId,
     agentId: originalMemory.agentId, // Keep original agent as creator
     projectId,
-    scope: 'shared',
+    scope: 'team',
     category,
     content: originalMemory.content,
     ...(originalMemory.metadata && { metadata: originalMemory.metadata }),
@@ -99,33 +115,38 @@ export async function shareLearning(
     version: 1,
   };
 
-  const sharedKey = buildKey(agentId, category, newMemoryId, 'shared');
-  await storage.set(sharedKey, sharedMemory);
+  const teamKey = buildKey(agentId, category, newMemoryId, 'team');
+  await storage.set(teamKey, teamMemory);
 
-  logger.debug('Created shared memory', { sharedMemoryId: newMemoryId, category });
+  logger.debug('Created team memory', { teamMemoryId: newMemoryId, category });
 
-  // Delete original if keepPrivate is false
+  // Delete original if keepOriginal is false
   let originalDeleted = false;
-  if (!keepPrivate) {
-    const deleted = await storage.deleteFromProject(originalKey, projectId);
+  if (!keepOriginal) {
+    let deleted: boolean;
+    if (foundInUserBucket) {
+      deleted = await storage.deleteFromUserBucket(originalKey, agentId);
+    } else {
+      deleted = await storage.deleteFromProject(originalKey, projectId);
+    }
     originalDeleted = deleted;
     if (deleted) {
-      logger.debug('Deleted original private memory', { memoryId, originalKey });
+      logger.debug('Deleted original memory', { memoryId, originalKey, fromUserBucket: foundInUserBucket });
     } else {
-      logger.warn('Failed to delete original private memory', { memoryId, originalKey });
+      logger.warn('Failed to delete original memory', { memoryId, originalKey });
     }
   } else {
-    logger.debug('Keeping original private memory', { memoryId });
+    logger.debug('Keeping original memory', { memoryId });
   }
 
   logger.info('Successfully shared learning', {
     originalMemoryId: memoryId,
-    sharedMemoryId: newMemoryId,
+    teamMemoryId: newMemoryId,
     originalDeleted,
   });
 
   return {
-    sharedMemoryId: newMemoryId,
+    teamMemoryId: newMemoryId,
     originalDeleted,
   };
 }

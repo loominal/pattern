@@ -38,6 +38,15 @@ describe('recall_context', () => {
       deleteFromProject: vi.fn().mockResolvedValue(false),
       listFromProject: vi.fn().mockResolvedValue([]),
       keysFromProject: vi.fn().mockResolvedValue([]),
+      // New multi-bucket methods
+      getFromUserBucket: vi.fn().mockResolvedValue(null),
+      listFromUserBucket: vi.fn().mockResolvedValue([]),
+      keysFromUserBucket: vi.fn().mockResolvedValue([]),
+      deleteFromUserBucket: vi.fn().mockResolvedValue(false),
+      getFromGlobalBucket: vi.fn().mockResolvedValue(null),
+      listFromGlobalBucket: vi.fn().mockResolvedValue([]),
+      keysFromGlobalBucket: vi.fn().mockResolvedValue([]),
+      deleteFromGlobalBucket: vi.fn().mockResolvedValue(false),
     };
   });
 
@@ -82,9 +91,9 @@ describe('recall_context', () => {
       const result = await recallContext(mockStorage, projectId, agentId);
 
       expect(result.private).toHaveLength(2);
-      expect(result.shared).toHaveLength(0);
+      expect(result.team).toHaveLength(0);
       expect(result.counts.private).toBe(2);
-      expect(result.counts.shared).toBe(0);
+      expect(result.counts.team).toBe(0);
       expect(result.counts.expired).toBe(0);
       expect(result.summary).toContain('core');
       expect(result.summary).toContain('recent');
@@ -96,7 +105,7 @@ describe('recall_context', () => {
           id: 'mem-3',
           agentId: 'other-agent',
           projectId,
-          scope: 'shared',
+          scope: 'team',
           category: 'decisions',
           content: 'Important decision',
           createdAt: '2025-01-01T08:00:00Z',
@@ -115,9 +124,9 @@ describe('recall_context', () => {
       const result = await recallContext(mockStorage, projectId, agentId);
 
       expect(result.private).toHaveLength(0);
-      expect(result.shared).toHaveLength(1);
+      expect(result.team).toHaveLength(1);
       expect(result.counts.private).toBe(0);
-      expect(result.counts.shared).toBe(1);
+      expect(result.counts.team).toBe(1);
       expect(result.counts.expired).toBe(0);
       expect(result.summary).toContain('decisions');
     });
@@ -142,7 +151,7 @@ describe('recall_context', () => {
           id: 'mem-2',
           agentId: 'other-agent',
           projectId,
-          scope: 'shared',
+          scope: 'team',
           category: 'learnings',
           content: 'Learning 1',
           createdAt: '2025-01-01T09:00:00Z',
@@ -162,13 +171,13 @@ describe('recall_context', () => {
       });
 
       const result = await recallContext(mockStorage, projectId, agentId, {
-        scope: 'both',
+        scopes: ['private', 'personal', 'team', 'public'],
       });
 
       expect(result.private).toHaveLength(1);
-      expect(result.shared).toHaveLength(1);
+      expect(result.team).toHaveLength(1);
       expect(result.counts.private).toBe(1);
-      expect(result.counts.shared).toBe(1);
+      expect(result.counts.team).toBe(1);
     });
   });
 
@@ -191,40 +200,38 @@ describe('recall_context', () => {
       vi.mocked(mockStorage.listFromProject).mockResolvedValue(privateMemories);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
-        scope: 'private',
+        scopes: ['private'],
       });
 
       expect(mockStorage.listFromProject).toHaveBeenCalledWith(`agents/${agentId}/`, projectId);
-      expect(mockStorage.listFromProject).toHaveBeenCalledTimes(1);
       expect(result.private).toHaveLength(1);
-      expect(result.shared).toHaveLength(0);
+      expect(result.team).toHaveLength(0);
     });
 
-    it('should filter for shared scope only', async () => {
-      const sharedMemories: Memory[] = [
+    it('should filter for team scope only', async () => {
+      const teamMemories: Memory[] = [
         {
           id: 'mem-1',
           agentId: 'other-agent',
           projectId,
-          scope: 'shared',
+          scope: 'team',
           category: 'decisions',
-          content: 'Shared memory',
+          content: 'Team memory',
           createdAt: '2025-01-01T10:00:00Z',
           updatedAt: '2025-01-01T10:00:00Z',
           version: 1,
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(sharedMemories);
+      vi.mocked(mockStorage.listFromProject).mockResolvedValue(teamMemories);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
-        scope: 'shared',
+        scopes: ['team'],
       });
 
       expect(mockStorage.listFromProject).toHaveBeenCalledWith('shared/', projectId);
-      expect(mockStorage.listFromProject).toHaveBeenCalledTimes(1);
       expect(result.private).toHaveLength(0);
-      expect(result.shared).toHaveLength(1);
+      expect(result.team).toHaveLength(1);
     });
   });
 
@@ -679,10 +686,10 @@ describe('recall_context', () => {
       const result = await recallContext(mockStorage, projectId, agentId);
 
       expect(result.private).toHaveLength(0);
-      expect(result.shared).toHaveLength(0);
+      expect(result.team).toHaveLength(0);
       expect(result.summary).toBe('');
       expect(result.counts.private).toBe(0);
-      expect(result.counts.shared).toBe(0);
+      expect(result.counts.team).toBe(0);
       expect(result.counts.expired).toBe(0);
     });
 

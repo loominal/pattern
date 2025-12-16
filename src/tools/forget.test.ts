@@ -15,10 +15,15 @@ describe('forget tool', () => {
   const agentId = 'test-agent-123';
 
   beforeEach(() => {
-    // Create mock storage
+    // Create mock storage with all bucket methods
     mockStorage = {
-      getFromProject: vi.fn(),
-      deleteFromProject: vi.fn(),
+      getFromProject: vi.fn().mockResolvedValue(null),
+      deleteFromProject: vi.fn().mockResolvedValue(false),
+      // New multi-bucket methods
+      getFromUserBucket: vi.fn().mockResolvedValue(null),
+      deleteFromUserBucket: vi.fn().mockResolvedValue(false),
+      getFromGlobalBucket: vi.fn().mockResolvedValue(null),
+      deleteFromGlobalBucket: vi.fn().mockResolvedValue(false),
     } as unknown as NatsKvBackend;
   });
 
@@ -179,7 +184,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId, // Created by current agent
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
         content: 'Decision to forget',
         createdAt: new Date().toISOString(),
@@ -217,7 +222,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId,
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'architecture',
         content: 'Architecture note to forget',
         createdAt: new Date().toISOString(),
@@ -251,7 +256,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId,
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'learnings',
         content: 'Learning to forget',
         createdAt: new Date().toISOString(),
@@ -408,7 +413,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId: otherAgentId, // Created by different agent
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
         content: 'Decision by another agent',
         createdAt: new Date().toISOString(),
@@ -447,7 +452,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId, // Created by current agent
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'architecture',
         content: 'My architecture note',
         createdAt: new Date().toISOString(),
@@ -509,7 +514,7 @@ describe('forget tool', () => {
         id: memoryId,
         agentId,
         projectId,
-        scope: 'shared',
+        scope: 'team',
         category: 'decisions',
         content: 'Shared memory',
         createdAt: new Date().toISOString(),
