@@ -45,7 +45,7 @@ USER pattern
 # Environment variables (can be overridden at runtime)
 ENV NODE_ENV=production
 ENV NATS_URL=nats://localhost:4222
-ENV LOOM_PROJECT_ID=default
+ENV LOOMINAL_PROJECT_ID=default
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
