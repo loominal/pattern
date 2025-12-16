@@ -5,12 +5,106 @@
  * Hierarchical agent memory system for Loom
  */
 
-import { connect, NatsConnection } from 'nats';
+import { realpathSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { connect as connectTcp, NatsConnection, ConnectionOptions } from 'nats';
 import { loadConfig, validateConfig } from './config.js';
 import { logger } from './logger.js';
 import { AgentSession } from './session.js';
 import { PatternServer } from './server.js';
 import { loadIdentity } from './identity.js';
+
+/**
+ * Parsed NATS URL components
+ */
+interface ParsedNatsUrl {
+  server: string;
+  user?: string;
+  pass?: string;
+  transport: 'tcp' | 'websocket';
+}
+
+/**
+ * Parse a NATS URL that may contain credentials
+ * Based on warp/src/nats.ts parseNatsUrl()
+ */
+function parseNatsUrl(url: string): ParsedNatsUrl {
+  const transport =
+    url.toLowerCase().startsWith('wss://') || url.toLowerCase().startsWith('ws://')
+      ? 'websocket'
+      : 'tcp';
+
+  try {
+    let normalizedUrl: string;
+    if (url.startsWith('nats://')) {
+      normalizedUrl = url.replace(/^nats:\/\//, 'http://');
+    } else if (url.startsWith('tls://')) {
+      normalizedUrl = url.replace(/^tls:\/\//, 'https://');
+    } else if (url.startsWith('wss://')) {
+      normalizedUrl = url.replace(/^wss:\/\//, 'https://');
+    } else if (url.startsWith('ws://')) {
+      normalizedUrl = url.replace(/^ws:\/\//, 'http://');
+    } else {
+      normalizedUrl = `http://${url}`;
+    }
+
+    const parsed = new URL(normalizedUrl);
+
+    let server: string;
+    if (transport === 'websocket') {
+      const protocol = url.toLowerCase().startsWith('ws://') ? 'ws' : 'wss';
+      server = `${protocol}://${parsed.host}${parsed.pathname}${parsed.search}`;
+    } else {
+      server = `nats://${parsed.host}`;
+    }
+
+    const result: ParsedNatsUrl = { server, transport };
+
+    if (parsed.username) {
+      result.user = decodeURIComponent(parsed.username);
+    }
+    if (parsed.password) {
+      result.pass = decodeURIComponent(parsed.password);
+    }
+
+    return result;
+  } catch {
+    return { server: url, transport };
+  }
+}
+
+/**
+ * Initialize WebSocket shim for Node.js
+ */
+async function initWebSocketShim(): Promise<void> {
+  const ws = await import('ws');
+  (globalThis as unknown as { WebSocket: typeof ws.default }).WebSocket = ws.default;
+}
+
+/**
+ * Connect to NATS using appropriate transport
+ */
+async function connectToNats(natsUrl: string): Promise<NatsConnection> {
+  const parsed = parseNatsUrl(natsUrl);
+
+  const opts: ConnectionOptions = {
+    servers: parsed.server,
+    name: 'pattern-identity-loader',
+  };
+
+  if (parsed.user && parsed.pass) {
+    opts.user = parsed.user;
+    opts.pass = parsed.pass;
+  }
+
+  if (parsed.transport === 'websocket') {
+    await initWebSocketShim();
+    const { connect: connectWs } = await import('nats.ws');
+    return connectWs(opts);
+  } else {
+    return connectTcp(opts);
+  }
+}
 
 /**
  * Parse command line arguments
@@ -122,7 +216,7 @@ async function main() {
   let nc: NatsConnection;
   try {
     logger.info('Connecting to NATS to load identity...');
-    nc = await connect({ servers: config.natsUrl });
+    nc = await connectToNats(config.natsUrl);
     logger.info('Connected to NATS');
   } catch (error) {
     logger.error('Failed to connect to NATS:', error);
@@ -185,8 +279,21 @@ async function main() {
 }
 
 // Only run main() when executed directly, not when imported
-// Check if this file is the main module
-const isMainModule = import.meta.url === `file://${process.argv[1]}`;
-if (isMainModule) {
+// Check if this file is the main module (resolving symlinks for bin scripts)
+function checkIsMainModule(): boolean {
+  const entryScript = process.argv[1];
+  if (!entryScript) return false;
+
+  try {
+    const thisFile = fileURLToPath(import.meta.url);
+    const entryFile = realpathSync(entryScript);
+    return thisFile === entryFile;
+  } catch {
+    // Fallback to direct comparison if realpath fails
+    return import.meta.url === `file://${entryScript}`;
+  }
+}
+
+if (checkIsMainModule()) {
   main();
 }
