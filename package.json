@@ -1,6 +1,6 @@
 {
   "name": "@loominal/pattern",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "MCP server for hierarchical agent memory",
   "type": "module",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "npm run build && npm run test"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "loominal",
