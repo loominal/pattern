@@ -20,8 +20,8 @@ describe('loadConfig', () => {
 
   it('should return default values when no env vars are set', () => {
     delete process.env.NATS_URL;
-    delete process.env.PROJECT_ID;
-    delete process.env.AGENT_ID;
+    delete process.env.LOOMINAL_PROJECT_ID;
+    delete process.env.LOOMINAL_AGENT_ID;
     delete process.env.DEBUG;
 
     const config = loadConfig();
@@ -40,16 +40,16 @@ describe('loadConfig', () => {
     expect(config.natsUrl).toBe('nats://custom-server:4222');
   });
 
-  it('should use PROJECT_ID env var when set', () => {
-    process.env.PROJECT_ID = 'my-project';
+  it('should use LOOMINAL_PROJECT_ID env var when set', () => {
+    process.env.LOOMINAL_PROJECT_ID = 'my-project';
 
     const config = loadConfig();
 
     expect(config.projectId).toBe('my-project');
   });
 
-  it('should use AGENT_ID env var when set', () => {
-    process.env.AGENT_ID = 'agent-123';
+  it('should use LOOMINAL_AGENT_ID env var when set', () => {
+    process.env.LOOMINAL_AGENT_ID = 'agent-123';
 
     const config = loadConfig();
 
@@ -74,8 +74,8 @@ describe('loadConfig', () => {
 
   it('should handle all env vars set together', () => {
     process.env.NATS_URL = 'wss://nats.example.com';
-    process.env.PROJECT_ID = 'test-project';
-    process.env.AGENT_ID = 'test-agent';
+    process.env.LOOMINAL_PROJECT_ID = 'test-project';
+    process.env.LOOMINAL_AGENT_ID = 'test-agent';
     process.env.DEBUG = 'true';
 
     const config = loadConfig();
@@ -112,7 +112,7 @@ describe('validateConfig', () => {
       projectId: '',
     };
 
-    expect(() => validateConfig(config)).toThrow('PROJECT_ID is required');
+    expect(() => validateConfig(config)).toThrow('LOOMINAL_PROJECT_ID is required');
   });
 
   it('should accept config with optional fields', () => {
