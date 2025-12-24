@@ -377,6 +377,127 @@ Returns:
 
 **Security Note**: Import validates data but trusts the source file. Only import from trusted sources. Review the backup file contents before importing, especially when restoring from external sources.
 
+### `remember-bulk`
+
+Store multiple memories at once with validation and error handling. Efficiently batch-store memories with optional pre-flight validation.
+
+```json
+{
+  "memories": [
+    {
+      "content": "First memory",
+      "category": "longterm"
+    },
+    {
+      "content": "Second memory",
+      "scope": "team",
+      "category": "decisions",
+      "metadata": {
+        "tags": ["important"],
+        "priority": 1
+      }
+    },
+    {
+      "content": "Third memory",
+      "scope": "personal",
+      "category": "core"
+    }
+  ],
+  "stopOnError": false,  // Optional: stop on first error vs continue (default: false)
+  "validate": true       // Optional: validate all before storing any (default: true)
+}
+```
+
+Returns:
+```json
+{
+  "stored": 3,
+  "failed": 0,
+  "errors": [],
+  "memoryIds": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  ]
+}
+```
+
+**Parameters**:
+- `memories`: Array of memory objects, each with the same fields as the `remember` tool
+- `stopOnError`: If true, stops on first error; if false (default), continues and reports all errors
+- `validate`: If true (default), validates all memories before storing any; if false, validates during storage
+
+**Validation** (when `validate: true`):
+- Pre-flight validation checks all memories before storing
+- Validates content size (max 32KB), scope/category combinations, metadata structure
+- If any validation errors occur, nothing is stored and a PatternError is thrown
+- All validation errors are reported with their array indices
+
+**Error Handling**:
+- With `stopOnError: false` (default): Continues storing valid memories, reports all errors
+- With `stopOnError: true`: Stops at first error, returns partial results
+- Errors include the array index and error message for troubleshooting
+
+**Use Cases**:
+- Bulk import of memories from external sources
+- Initializing agent memory with multiple entries
+- Batch creation of project documentation or decisions
+- Migrating memories between systems
+
+**Performance**: Not atomic - failures can leave partial results. Use validation to catch errors upfront.
+
+**Security Note**: Each memory is scanned individually for sensitive content (same as `remember` tool). Review warnings in logs.
+
+### `forget-bulk`
+
+Delete multiple memories by IDs with error handling. Efficiently batch-delete memories with optional force flag for core memories.
+
+```json
+{
+  "memoryIds": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  ],
+  "stopOnError": false,  // Optional: stop on first error vs continue (default: false)
+  "force": false         // Optional: force delete core memories (default: false)
+}
+```
+
+Returns:
+```json
+{
+  "deleted": 3,
+  "failed": 0,
+  "errors": []
+}
+```
+
+**Parameters**:
+- `memoryIds`: Array of memory IDs (UUIDs) to delete
+- `stopOnError`: If true, stops on first error; if false (default), continues and reports all errors
+- `force`: If true, allows deletion of core memories; if false (default), core memories are protected
+
+**Error Handling**:
+- With `stopOnError: false` (default): Continues deleting valid memories, reports all errors
+- With `stopOnError: true`: Stops at first error, returns partial results
+- Common errors: memory not found, core memory without force flag, access denied (for team/public memories created by others)
+- Errors include the memory ID and error message for troubleshooting
+
+**Access Control**:
+- Can only delete your own private/personal memories
+- Can only delete team/public memories you created
+- Core memories require `force: true` flag
+- Same rules as the `forget` tool apply to each memory
+
+**Use Cases**:
+- Cleanup of multiple obsolete memories
+- Bulk removal of temporary or expired entries
+- Clearing out test data
+- Memory management during refactoring
+
+**Performance**: Not atomic - failures can leave partial results. Each memory is deleted independently.
+
 ### `pattern_health`
 
 Check server health and connection status.

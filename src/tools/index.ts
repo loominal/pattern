@@ -18,6 +18,8 @@ export * from './cleanup.js';
 export * from './recall-context.js';
 export * from './export-memories.js';
 export * from './import-memories.js';
+export * from './remember-bulk.js';
+export * from './forget-bulk.js';
 
 // Import handlers for dispatcher
 import { remember, type RememberInput } from './remember.js';
@@ -31,6 +33,8 @@ import { cleanup, type CleanupInput } from './cleanup.js';
 import { recallContext, type RecallContextInput } from './recall-context.js';
 import { exportMemories, type ExportMemoriesInput } from './export-memories.js';
 import { importMemories, type ImportMemoriesInput } from './import-memories.js';
+import { rememberBulk, type RememberBulkInput } from './remember-bulk.js';
+import { forgetBulk, type ForgetBulkInput } from './forget-bulk.js';
 
 /**
  * MCP Tool definitions following the MCP specification
@@ -372,6 +376,100 @@ export const TOOL_DEFINITIONS: Tool[] = [
       required: ['inputPath'],
     },
   },
+  {
+    name: 'remember-bulk',
+    description:
+      'Store multiple memories at once with validation and error handling. Efficiently batch-store memories with optional pre-flight validation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        memories: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              content: {
+                type: 'string',
+                description: 'The content to remember (max 32KB)',
+              },
+              scope: {
+                type: 'string',
+                enum: ['private', 'personal', 'team', 'public'],
+                description:
+                  'Memory scope: private (agent-specific) or shared (project-wide). Default: private',
+              },
+              category: {
+                type: 'string',
+                enum: ['recent', 'tasks', 'longterm', 'core', 'decisions', 'architecture', 'learnings'],
+                description:
+                  'Memory category. Private: recent (24h), tasks (24h), longterm, core. Shared: decisions, architecture, learnings. Default: recent',
+              },
+              metadata: {
+                type: 'object',
+                properties: {
+                  tags: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Tags for categorization (max 10 tags, 50 chars each)',
+                  },
+                  priority: {
+                    type: 'number',
+                    enum: [1, 2, 3],
+                    description: 'Priority level: 1=high, 2=medium, 3=low',
+                  },
+                  relatedTo: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Related memory IDs',
+                  },
+                  source: {
+                    type: 'string',
+                    description: 'Source of this memory',
+                  },
+                },
+                description: 'Optional metadata for the memory',
+              },
+            },
+            required: ['content'],
+          },
+          description: 'Array of memories to store',
+        },
+        stopOnError: {
+          type: 'boolean',
+          description: 'Stop on first error vs continue (default: false)',
+        },
+        validate: {
+          type: 'boolean',
+          description: 'Validate all before storing any (default: true)',
+        },
+      },
+      required: ['memories'],
+    },
+  },
+  {
+    name: 'forget-bulk',
+    description:
+      'Delete multiple memories by IDs with error handling. Efficiently batch-delete memories with optional force flag for core memories.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        memoryIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Array of memory IDs to delete',
+        },
+        stopOnError: {
+          type: 'boolean',
+          description: 'Stop on first error vs continue (default: false)',
+        },
+        force: {
+          type: 'boolean',
+          description: 'Force delete core memories (default: false)',
+        },
+      },
+      required: ['memoryIds'],
+    },
+  },
 ];
 
 /**
@@ -456,6 +554,18 @@ export async function handleToolCall(
 
     case 'import-memories':
       return importMemories(args as unknown as ImportMemoriesInput, storage, projectId, agentId);
+
+    case 'remember-bulk':
+      return rememberBulk(
+        args as unknown as RememberBulkInput,
+        storage,
+        projectId,
+        agentId,
+        config
+      );
+
+    case 'forget-bulk':
+      return forgetBulk(args as unknown as ForgetBulkInput, storage, projectId, agentId);
 
     default:
       throw new Error(`Unknown tool: ${name}`);
