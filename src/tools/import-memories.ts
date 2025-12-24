@@ -202,7 +202,7 @@ export async function importMemories(
       try {
         // Validate memory structure
         if (!validateMemory(memory)) {
-          const error = `Invalid memory structure: ${memory.id || 'unknown'}`;
+          const error = `Invalid memory structure: ${(memory as any).id || 'unknown'}`;
           errors.push(error);
           if (!skipInvalid) {
             throw new PatternError(

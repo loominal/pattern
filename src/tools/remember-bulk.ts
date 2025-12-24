@@ -184,9 +184,9 @@ export async function rememberBulk(
       // Convert BulkMemoryInput to RememberInput
       const rememberInput: RememberInput = {
         content: memory.content,
-        scope: memory.scope,
-        category: memory.category,
-        metadata: memory.metadata,
+        ...(memory.scope !== undefined && { scope: memory.scope }),
+        ...(memory.category !== undefined && { category: memory.category }),
+        ...(memory.metadata !== undefined && { metadata: memory.metadata }),
       };
 
       // Call the remember tool
