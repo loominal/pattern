@@ -1,6 +1,6 @@
 {
   "name": "@loominal/pattern",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "MCP server for hierarchical agent memory",
   "type": "module",
   "main": "dist/index.js",
