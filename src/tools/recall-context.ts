@@ -17,6 +17,18 @@ export interface RecallContextInput {
   categories?: MemoryCategory[]; // filter by categories (empty = all)
   limit?: number; // default: 50, max: 200
   since?: string; // ISO 8601, only memories after this
+  // Tag filtering
+  tags?: string[]; // Filter by tags (AND logic - memory must have all tags)
+  // Priority filtering
+  minPriority?: 1 | 2 | 3; // Minimum priority (1=high, 2=medium, 3=low)
+  maxPriority?: 1 | 2 | 3; // Maximum priority
+  // Date range filtering
+  createdAfter?: string; // ISO 8601, only memories created after this
+  createdBefore?: string; // ISO 8601, only memories created before this
+  updatedAfter?: string; // ISO 8601, only memories updated after this
+  updatedBefore?: string; // ISO 8601, only memories updated before this
+  // Content search
+  search?: string; // Text search in content (case-insensitive)
 }
 
 /**
@@ -112,7 +124,20 @@ export async function recallContext(
   input: RecallContextInput = {},
   subagentInfo?: SubagentInfo
 ): Promise<RecallResult> {
-  const { scopes = ['private', 'personal', 'team', 'public'], categories = [], limit = 50, since } = input;
+  const {
+    scopes = ['private', 'personal', 'team', 'public'],
+    categories = [],
+    limit = 50,
+    since,
+    tags,
+    minPriority,
+    maxPriority,
+    createdAfter,
+    createdBefore,
+    updatedAfter,
+    updatedBefore,
+    search,
+  } = input;
 
   // Validate limit
   const effectiveLimit = Math.min(Math.max(1, limit), 200);
@@ -214,6 +239,67 @@ export async function recallContext(
         return updatedAt > sinceDate;
       });
       logger.debug('Filtered by since', { count: filteredMemories.length, since });
+    }
+
+    // Filter by tags if provided (AND logic - memory must have all specified tags)
+    if (tags && tags.length > 0) {
+      filteredMemories = filteredMemories.filter((m) => {
+        const memoryTags = m.metadata?.tags || [];
+        return tags.every((tag) => memoryTags.includes(tag));
+      });
+      logger.debug('Filtered by tags', { count: filteredMemories.length, tags });
+    }
+
+    // Filter by priority if provided
+    if (minPriority !== undefined || maxPriority !== undefined) {
+      filteredMemories = filteredMemories.filter((m) => {
+        const priority = m.metadata?.priority ?? 2; // default priority is 2 (medium)
+        const min = minPriority ?? 1;
+        const max = maxPriority ?? 3;
+        return priority >= min && priority <= max;
+      });
+      logger.debug('Filtered by priority', {
+        count: filteredMemories.length,
+        minPriority,
+        maxPriority,
+      });
+    }
+
+    // Filter by created date range if provided
+    if (createdAfter || createdBefore) {
+      filteredMemories = filteredMemories.filter((m) => {
+        const createdAt = new Date(m.createdAt);
+        if (createdAfter && createdAt < new Date(createdAfter)) return false;
+        if (createdBefore && createdAt > new Date(createdBefore)) return false;
+        return true;
+      });
+      logger.debug('Filtered by created date range', {
+        count: filteredMemories.length,
+        createdAfter,
+        createdBefore,
+      });
+    }
+
+    // Filter by updated date range if provided
+    if (updatedAfter || updatedBefore) {
+      filteredMemories = filteredMemories.filter((m) => {
+        const updatedAt = new Date(m.updatedAt);
+        if (updatedAfter && updatedAt < new Date(updatedAfter)) return false;
+        if (updatedBefore && updatedAt > new Date(updatedBefore)) return false;
+        return true;
+      });
+      logger.debug('Filtered by updated date range', {
+        count: filteredMemories.length,
+        updatedAfter,
+        updatedBefore,
+      });
+    }
+
+    // Filter by content search if provided (case-insensitive)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredMemories = filteredMemories.filter((m) => m.content.toLowerCase().includes(searchLower));
+      logger.debug('Filtered by content search', { count: filteredMemories.length, search });
     }
 
     // Sort by priority

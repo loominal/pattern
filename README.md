@@ -208,18 +208,61 @@ Delete a memory by ID.
 
 ### `recall-context`
 
-Retrieve memory context at session start.
+Retrieve memory context at session start with powerful filtering and search capabilities.
 
+**Basic Parameters:**
 ```json
 {
-  "scopes": ["private", "personal", "team"],
-  "categories": ["core", "longterm", "decisions"],
-  "limit": 50,
-  "since": "2025-01-01T00:00:00Z"
+  "scopes": ["private", "personal", "team"],  // Filter by scope
+  "categories": ["core", "longterm", "decisions"],  // Filter by category
+  "limit": 50,  // Max memories to return (default: 50, max: 200)
+  "since": "2025-01-01T00:00:00Z"  // Only memories updated after this
 }
 ```
 
-Returns:
+**Advanced Filtering (v0.4.0+):**
+```json
+{
+  // Tag filtering (AND logic - memory must have all tags)
+  "tags": ["api", "documentation"],
+
+  // Priority filtering (1=high, 2=medium, 3=low)
+  "minPriority": 1,  // Minimum priority
+  "maxPriority": 2,  // Maximum priority
+
+  // Date range filtering
+  "createdAfter": "2025-01-01T00:00:00Z",   // Created after this date
+  "createdBefore": "2025-01-31T00:00:00Z",  // Created before this date
+  "updatedAfter": "2025-01-15T00:00:00Z",   // Updated after this date
+  "updatedBefore": "2025-01-31T00:00:00Z",  // Updated before this date
+
+  // Content search (case-insensitive)
+  "search": "authentication"
+}
+```
+
+**Examples:**
+
+Find high-priority API documentation created this month:
+```json
+{
+  "tags": ["api", "docs"],
+  "maxPriority": 1,
+  "createdAfter": "2025-01-01T00:00:00Z",
+  "search": "REST"
+}
+```
+
+Find recent architecture decisions:
+```json
+{
+  "scopes": ["team"],
+  "categories": ["architecture", "decisions"],
+  "updatedAfter": "2025-01-01T00:00:00Z"
+}
+```
+
+**Returns:**
 ```json
 {
   "private": [...],
@@ -236,6 +279,12 @@ Returns:
   }
 }
 ```
+
+**Filter Logic:**
+- All filters are applied as AND conditions (memories must match all specified filters)
+- Tag filtering uses AND logic (memory must have ALL specified tags)
+- Memories without priority metadata default to priority 2 (medium)
+- Empty or unspecified filters are ignored (e.g., `tags: []` returns all memories)
 
 ### `share-learning`
 

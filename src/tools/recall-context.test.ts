@@ -347,7 +347,14 @@ describe('recall_context', () => {
         version: 1,
       }));
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -367,7 +374,14 @@ describe('recall_context', () => {
         version: 1,
       }));
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         limit: 25,
@@ -389,7 +403,14 @@ describe('recall_context', () => {
         version: 1,
       }));
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         limit: 300, // Request more than max
@@ -413,7 +434,14 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         limit: 0, // Request zero
@@ -480,7 +508,14 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId, {
         since: '2025-01-02T00:00:00Z',
@@ -679,6 +714,1055 @@ describe('recall_context', () => {
     });
   });
 
+  describe('Tag Filtering', () => {
+    it('should filter by single tag', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory with tag1',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['tag1', 'tag2'],
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory without tag1',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['tag3'],
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['tag1'],
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should filter by multiple tags (AND logic)', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory with both tags',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['tag1', 'tag2', 'tag3'],
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory with only tag1',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['tag1'],
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['tag1', 'tag2'],
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should return no results when tag not found', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['tag1'],
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['nonexistent'],
+      });
+
+      expect(result.private).toHaveLength(0);
+    });
+
+    it('should handle memories without tags', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory without tags',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['tag1'],
+      });
+
+      expect(result.private).toHaveLength(0);
+    });
+
+    it('should return all memories when tags array is empty', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: [],
+      });
+
+      expect(result.private).toHaveLength(1);
+    });
+  });
+
+  describe('Priority Filtering', () => {
+    it('should filter by minPriority only', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: { priority: 1 },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Low priority',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: { priority: 3 },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        minPriority: 2,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+
+    it('should filter by maxPriority only', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: { priority: 1 },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Low priority',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: { priority: 3 },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        maxPriority: 2,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should filter by priority range (min and max)', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: { priority: 1 },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Medium priority',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: { priority: 2 },
+        },
+        {
+          id: 'mem-3',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Low priority',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T08:00:00Z',
+          version: 1,
+          metadata: { priority: 3 },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        minPriority: 2,
+        maxPriority: 2,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+
+    it('should handle default priority (2) for memories without priority', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'No priority set',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: { priority: 1 },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        minPriority: 2,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+  });
+
+  describe('Date Range Filtering', () => {
+    it('should filter by createdAfter', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Old memory',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'New memory',
+          createdAt: '2025-01-05T10:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        createdAfter: '2025-01-03T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+
+    it('should filter by createdBefore', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Old memory',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'New memory',
+          createdAt: '2025-01-05T10:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        createdBefore: '2025-01-03T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should filter by created date range (createdAfter + createdBefore)', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Too old',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'In range',
+          createdAt: '2025-01-03T10:00:00Z',
+          updatedAt: '2025-01-03T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-3',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Too new',
+          createdAt: '2025-01-10T10:00:00Z',
+          updatedAt: '2025-01-10T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        createdAfter: '2025-01-02T00:00:00Z',
+        createdBefore: '2025-01-05T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+
+    it('should filter by updatedAfter', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Old update',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'New update',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        updatedAfter: '2025-01-03T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+
+    it('should filter by updatedBefore', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Old update',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'New update',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        updatedBefore: '2025-01-03T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should filter by updated date range (updatedAfter + updatedBefore)', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Too old',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'In range',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-03T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-3',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Too new',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-10T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        updatedAfter: '2025-01-02T00:00:00Z',
+        updatedBefore: '2025-01-05T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-2');
+    });
+  });
+
+  describe('Content Search', () => {
+    it('should filter by case-insensitive content search', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'The API uses REST with JSON responses',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Database setup instructions',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        search: 'api',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should handle partial match in content search', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Authentication implemented',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        search: 'auth',
+      });
+
+      expect(result.private).toHaveLength(1);
+    });
+
+    it('should return no results when search text not found', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Some content',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        search: 'nonexistent',
+      });
+
+      expect(result.private).toHaveLength(0);
+    });
+
+    it('should return all memories when search is empty string', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Memory',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        search: '',
+      });
+
+      expect(result.private).toHaveLength(1);
+    });
+  });
+
+  describe('Combined Filters', () => {
+    it('should combine tags + priority filters', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority with tag',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['important'],
+            priority: 1,
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Low priority with tag',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['important'],
+            priority: 3,
+          },
+        },
+        {
+          id: 'mem-3',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority without tag',
+          createdAt: '2025-01-01T08:00:00Z',
+          updatedAt: '2025-01-01T08:00:00Z',
+          version: 1,
+          metadata: {
+            priority: 1,
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['important'],
+        maxPriority: 1,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should combine tags + date range filters', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Recent with tag',
+          createdAt: '2025-01-05T10:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['important'],
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Old with tag',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['important'],
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['important'],
+        createdAfter: '2025-01-03T00:00:00Z',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should combine priority + content search filters', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'High priority API documentation',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            priority: 1,
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Low priority API notes',
+          createdAt: '2025-01-01T09:00:00Z',
+          updatedAt: '2025-01-01T09:00:00Z',
+          version: 1,
+          metadata: {
+            priority: 3,
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        search: 'API',
+        maxPriority: 1,
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+
+    it('should combine all filters together', async () => {
+      const memories: Memory[] = [
+        {
+          id: 'mem-1',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'Perfect match - API documentation',
+          createdAt: '2025-01-05T10:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['api', 'docs'],
+            priority: 1,
+          },
+        },
+        {
+          id: 'mem-2',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'API notes but wrong priority',
+          createdAt: '2025-01-05T10:00:00Z',
+          updatedAt: '2025-01-05T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['api', 'docs'],
+            priority: 3,
+          },
+        },
+        {
+          id: 'mem-3',
+          agentId,
+          projectId,
+          scope: 'private',
+          category: 'recent',
+          content: 'API notes but too old',
+          createdAt: '2025-01-01T10:00:00Z',
+          updatedAt: '2025-01-01T10:00:00Z',
+          version: 1,
+          metadata: {
+            tags: ['api', 'docs'],
+            priority: 1,
+          },
+        },
+      ];
+
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
+
+      const result = await recallContext(mockStorage, projectId, agentId, {
+        tags: ['api', 'docs'],
+        maxPriority: 1,
+        createdAfter: '2025-01-03T00:00:00Z',
+        search: 'documentation',
+      });
+
+      expect(result.private).toHaveLength(1);
+      expect(result.private[0].id).toBe('mem-1');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle no memories', async () => {
       vi.mocked(mockStorage.listFromProject).mockResolvedValue([]);
@@ -725,7 +1809,14 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
@@ -751,7 +1842,14 @@ describe('recall_context', () => {
         },
       ];
 
-      vi.mocked(mockStorage.listFromProject).mockResolvedValue(memories);
+      vi.mocked(mockStorage.listFromProject).mockImplementation(async (prefix: string) => {
+        if (prefix === `agents/${agentId}/`) {
+          return memories;
+        }
+        return [];
+      });
+      vi.mocked(mockStorage.listFromUserBucket).mockResolvedValue([]);
+      vi.mocked(mockStorage.listFromGlobalBucket).mockResolvedValue([]);
 
       const result = await recallContext(mockStorage, projectId, agentId);
 
