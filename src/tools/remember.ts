@@ -6,9 +6,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { LoominalScope } from '@loominal/shared/types';
 import type { NatsKvBackend } from '../storage/nats-kv.js';
-import type { Memory, MemoryCategory, MemoryMetadata } from '../types.js';
+import type { Memory, MemoryCategory, MemoryMetadata, PatternConfig } from '../types.js';
 import { PatternError, PatternErrorCode, validateScopeCategory, getTTL } from '../types.js';
 import { buildKey } from '../storage/interface.js';
+import { getDefaultScanner } from '../security/content-scanner.js';
+import { logger } from '../logger.js';
 
 export interface RememberInput {
   content: string; // Max 32KB
@@ -30,13 +32,15 @@ const MAX_CONTENT_SIZE = 32 * 1024; // 32KB in bytes
  * @param storage - NATS KV storage backend
  * @param projectId - Current project ID
  * @param agentId - Current agent ID
+ * @param config - Optional Pattern configuration (for scanner settings)
  * @returns Memory ID and expiration time (if applicable)
  */
 export async function remember(
   input: RememberInput,
   storage: NatsKvBackend,
   projectId: string,
-  agentId: string
+  agentId: string,
+  config?: PatternConfig
 ): Promise<RememberOutput> {
   // Validate input
   if (!input.content || input.content.trim() === '') {
@@ -59,6 +63,25 @@ export async function remember(
 
   // Validate scope/category combination
   validateScopeCategory(scope, category);
+
+  // Scan content for sensitive information (non-blocking)
+  const scanningEnabled = config?.contentScanning?.enabled ?? true;
+  if (scanningEnabled) {
+    const scanner = getDefaultScanner();
+    const scanResult = scanner.scan(input.content);
+
+    if (scanResult.hasWarnings) {
+      const warningCount = scanResult.warnings.length;
+      logger.warn(
+        `Content scanning detected ${warningCount} potential sensitive information warning(s):`
+      );
+      const formatted = scanner.formatWarnings(scanResult.warnings);
+      logger.warn(formatted);
+      logger.warn(
+        'This is a non-blocking warning. The memory has been stored. Review the content to ensure no secrets or PII were accidentally included.'
+      );
+    }
+  }
 
   // Generate memory ID
   const memoryId = uuidv4();

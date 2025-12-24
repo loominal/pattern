@@ -123,10 +123,12 @@ export class PatternServer {
           storage: NatsKvBackend;
           isSubagent?: boolean;
           parentId?: string;
+          config?: PatternConfig;
         } = {
           agentId: this.session.agentId,
           projectId: this.session.projectId,
           storage: this.storage,
+          config: this.config,
         };
 
         // Add sub-agent info if applicable

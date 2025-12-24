@@ -4,7 +4,7 @@
  */
 
 import type { NatsKvBackend } from '../storage/nats-kv.js';
-import type { MemoryMetadata } from '../types.js';
+import type { MemoryMetadata, PatternConfig } from '../types.js';
 import { remember, type RememberOutput } from './remember.js';
 
 export interface RememberTaskInput {
@@ -19,13 +19,15 @@ export interface RememberTaskInput {
  * @param storage - NATS KV storage backend
  * @param projectId - Current project ID
  * @param agentId - Current agent ID
+ * @param config - Optional Pattern configuration
  * @returns Memory ID and expiration time (always has 24h TTL)
  */
 export async function rememberTask(
   input: RememberTaskInput,
   storage: NatsKvBackend,
   projectId: string,
-  agentId: string
+  agentId: string,
+  config?: PatternConfig
 ): Promise<RememberOutput> {
   return remember(
     {
@@ -36,6 +38,7 @@ export async function rememberTask(
     },
     storage,
     projectId,
-    agentId
+    agentId,
+    config
   );
 }

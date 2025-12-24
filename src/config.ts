@@ -18,6 +18,11 @@ export function loadConfig(): PatternConfig {
     config.debug = true;
   }
 
+  // Content scanning configuration (default: enabled)
+  config.contentScanning = {
+    enabled: process.env.PATTERN_CONTENT_SCANNING !== 'false',
+  };
+
   return config;
 }
 

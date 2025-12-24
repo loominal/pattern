@@ -324,6 +324,7 @@ export interface ToolContext {
   storage: NatsKvBackend;
   isSubagent?: boolean;
   parentId?: string;
+  config?: import('../types.js').PatternConfig;
 }
 
 /**
@@ -338,28 +339,35 @@ export async function handleToolCall(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<unknown> {
-  const { agentId, projectId, storage } = context;
+  const { agentId, projectId, storage, config } = context;
 
   switch (name) {
     case 'remember':
-      return remember(args as unknown as RememberInput, storage, projectId, agentId);
+      return remember(args as unknown as RememberInput, storage, projectId, agentId, config);
 
     case 'remember-task':
-      return rememberTask(args as unknown as RememberTaskInput, storage, projectId, agentId);
+      return rememberTask(
+        args as unknown as RememberTaskInput,
+        storage,
+        projectId,
+        agentId,
+        config
+      );
 
     case 'remember-learning':
       return rememberLearning(
         args as unknown as RememberLearningInput,
         storage,
         projectId,
-        agentId
+        agentId,
+        config
       );
 
     case 'commit-insight':
       return commitInsight(args as unknown as CommitInsightInput, storage, projectId, agentId);
 
     case 'core-memory':
-      return coreMemory(args as unknown as CoreMemoryInput, storage, projectId, agentId);
+      return coreMemory(args as unknown as CoreMemoryInput, storage, projectId, agentId, config);
 
     case 'forget':
       return forget(args as unknown as ForgetInput, storage, projectId, agentId);

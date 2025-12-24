@@ -60,6 +60,9 @@ export interface PatternConfig {
   projectId: string;
   agentId?: string;
   debug?: boolean;
+  contentScanning?: {
+    enabled: boolean;
+  };
 }
 
 /**

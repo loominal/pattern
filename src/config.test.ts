@@ -85,6 +85,32 @@ describe('loadConfig', () => {
     expect(config.agentId).toBe('test-agent');
     expect(config.debug).toBe(true);
   });
+
+  it('should enable content scanning by default', () => {
+    delete process.env.PATTERN_CONTENT_SCANNING;
+
+    const config = loadConfig();
+
+    expect(config.contentScanning).toBeDefined();
+    expect(config.contentScanning?.enabled).toBe(true);
+  });
+
+  it('should disable content scanning when PATTERN_CONTENT_SCANNING=false', () => {
+    process.env.PATTERN_CONTENT_SCANNING = 'false';
+
+    const config = loadConfig();
+
+    expect(config.contentScanning).toBeDefined();
+    expect(config.contentScanning?.enabled).toBe(false);
+  });
+
+  it('should keep content scanning enabled for any other value', () => {
+    process.env.PATTERN_CONTENT_SCANNING = 'true';
+
+    const config = loadConfig();
+
+    expect(config.contentScanning?.enabled).toBe(true);
+  });
 });
 
 describe('validateConfig', () => {

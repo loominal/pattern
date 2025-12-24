@@ -150,6 +150,8 @@ Store a new memory with specified scope and category.
 }
 ```
 
+**Security Note** (v0.3.1+): Content is scanned for common secret patterns (API keys, passwords, etc.) and warnings are issued if detected. Never store credentials directly. See [Security Best Practices](#security-best-practices).
+
 ### `remember-task`
 
 Quick shorthand to remember a task (private, 24h TTL).
@@ -190,6 +192,8 @@ Store an identity-defining memory with `personal` scope (follows user across pro
   "content": "I am a coding assistant that prioritizes test coverage"
 }
 ```
+
+**Security Note**: Core memories use `personal` scope and follow the agent across all projects. Never store project-specific secrets in core memories. Sub-agents cannot access parent core memories for additional protection.
 
 ### `forget`
 
@@ -245,6 +249,8 @@ Share a private/personal memory with all project agents (moves to `team` scope).
 }
 ```
 
+**Security Note**: Sharing makes the memory visible to **all agents in the project**. Review content for sensitive information before sharing. Once shared to team scope, it cannot be un-shared (only deleted).
+
 ### `cleanup`
 
 Run maintenance tasks to expire TTL memories and enforce limits.
@@ -280,6 +286,60 @@ export NATS_URL="wss://user:pass@nats.example.com"
 | Max shared memories per project | 10,000 |
 | Max core memories per agent | 100 |
 | Recent/Tasks category limit | 1,000/500 |
+
+## Security Best Practices
+
+### What NOT to Store
+
+Pattern stores data in **plaintext** in NATS KV. Never store:
+
+- 🚫 **Credentials**: Passwords, API keys, tokens, certificates
+- 🚫 **PII**: Social Security Numbers, credit cards, medical records
+- 🚫 **Secrets**: Database credentials, OAuth secrets, private keys
+
+### Content Scanning (v0.3.1+)
+
+Pattern includes an opt-in content scanner that detects common secret patterns (API keys, passwords, private keys, etc.) and warns before storage. Disable if needed:
+
+```bash
+export PATTERN_DISABLE_CONTENT_SCAN=true
+```
+
+### Secure Your NATS Connection
+
+**Use TLS for production**:
+```bash
+# WebSocket with TLS
+export NATS_URL="wss://user:pass@nats.example.com"
+
+# TCP with TLS
+export NATS_URL="tls://user:pass@nats.example.com:4222"
+```
+
+### Client-Side Encryption
+
+For sensitive content that must be stored, use client-side encryption:
+
+```typescript
+import { createCipheriv, randomBytes } from 'crypto';
+
+// Encrypt before storing
+const key = Buffer.from(process.env.PATTERN_ENCRYPTION_KEY!, 'hex');
+const iv = randomBytes(16);
+const cipher = createCipheriv('aes-256-cbc', key, iv);
+const encrypted = cipher.update('sensitive data', 'utf8', 'base64') + cipher.final('base64');
+
+await remember({
+  content: iv.toString('base64') + ':' + encrypted,
+  metadata: { tags: ['encrypted'] }
+});
+```
+
+**See [docs/SECURITY.md](docs/SECURITY.md) for comprehensive security guidance**, including:
+- Threat model and what Pattern protects against
+- Encryption examples with key management
+- Access control best practices
+- Incident response procedures
 
 ## Development
 
