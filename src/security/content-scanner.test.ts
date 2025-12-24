@@ -20,7 +20,7 @@ describe('ContentScanner', () => {
 
   describe('API Key Detection', () => {
     it('should detect api_key pattern', () => {
-      const content = 'api_key=sk_live_abcdefghijklmnopqrstuvwxyz123456';
+      const content = 'api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz123456';
       const result = scanner.scan(content);
 
       expect(result.hasWarnings).toBe(true);
@@ -310,7 +310,7 @@ describe('ContentScanner', () => {
   describe('Multiple Detections', () => {
     it('should detect multiple types of sensitive content', () => {
       const content = `
-        api_key=sk_live_abcdefghijklmnopqrstuvwxyz123456
+        api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz123456
         password=MyP@ssword123
         Contact: admin@example.com
         SSN: 123-45-6789
@@ -383,7 +383,7 @@ describe('ContentScanner', () => {
     });
 
     it('should include redacted sample', () => {
-      const content = 'api_key=sk_live_1234567890abcdefghijklmnopqrstuvwxyz';
+      const content = 'api_key=sk_test_FAKE_1234567890abcdefghijklmnopqrstuvwxyz';
       const result = scanner.scan(content);
 
       expect(result.warnings[0].sample).toBeDefined();
@@ -408,7 +408,7 @@ describe('ContentScanner', () => {
       const config: ScannerConfig = { enabled: false };
       const disabledScanner = new ContentScanner(config);
 
-      const content = 'api_key=sk_live_abcdefghijklmnopqrstuvwxyz123456';
+      const content = 'api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz123456';
       const result = disabledScanner.scan(content);
 
       expect(result.hasWarnings).toBe(false);
@@ -444,7 +444,7 @@ describe('ContentScanner', () => {
   describe('Format Warnings', () => {
     it('should format warnings by type', () => {
       const content = `
-        api_key=sk_live_abcdefghijklmnopqrstuvwxyz
+        api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz
         apiKey=sk_test_abcdefghijklmnopqrstuvwxyz
         password=MyP@ssword123
         email: admin@example.com
@@ -499,7 +499,7 @@ describe('ContentScanner', () => {
     });
 
     it('should handle very long content', () => {
-      const longContent = 'a'.repeat(50000) + ' api_key=sk_live_abcdefghijklmnopqrstuvwxyz';
+      const longContent = 'a'.repeat(50000) + ' api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz';
       const result = scanner.scan(longContent);
 
       expect(result.hasWarnings).toBe(true);
@@ -507,14 +507,14 @@ describe('ContentScanner', () => {
     });
 
     it('should handle content with special characters', () => {
-      const content = '中文 api_key=sk_live_abcdefghijklmnopqrstuvwxyz 🔑';
+      const content = '中文 api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz 🔑';
       const result = scanner.scan(content);
 
       expect(result.hasWarnings).toBe(true);
     });
 
     it('should handle newlines and tabs', () => {
-      const content = 'api_key=\t\nsk_live_abcdefghijklmnopqrstuvwxyz';
+      const content = 'api_key=\t\nsk_test_FAKE_abcdefghijklmnopqrstuvwxyz';
       const result = scanner.scan(content);
 
       expect(result.hasWarnings).toBe(true);
@@ -530,7 +530,7 @@ describe('ContentScanner', () => {
 
   describe('Real-world Scenarios', () => {
     it('should detect Stripe API key', () => {
-      const content = 'stripe_api_key=sk_live_51HabcdefghijklmnopqrstuvwxyzABCDEF';
+      const content = 'stripe_api_key=sk_test_FAKE_51HabcdefghijklmnopqrstuvwxyzABCDEF';
       const result = scanner.scan(content);
 
       expect(result.hasWarnings).toBe(true);

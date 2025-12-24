@@ -62,7 +62,7 @@ describe('Content Scanner Integration', () => {
         contentScanning: { enabled: true },
       };
 
-      const content = 'My API key is api_key=sk_live_abcdefghijklmnopqrstuvwxyz123456';
+      const content = 'My API key is api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz123456';
       await remember({ content }, storage, projectId, agentId, config);
 
       // Should emit warning but still store
@@ -124,7 +124,7 @@ describe('Content Scanner Integration', () => {
         contentScanning: { enabled: false },
       };
 
-      const content = 'My API key is api_key=sk_live_abcdefghijklmnopqrstuvwxyz123456';
+      const content = 'My API key is api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz123456';
       await remember({ content }, storage, projectId, agentId, config);
 
       expect(warnSpy).not.toHaveBeenCalled();
@@ -228,7 +228,7 @@ describe('Content Scanner Integration', () => {
       };
 
       const content = `
-        api_key=sk_live_abcdefghijklmnopqrstuvwxyz
+        api_key=sk_test_FAKE_abcdefghijklmnopqrstuvwxyz
         password=MyP@ssw0rd123
         Contact: user@example.com
         SSN: 123-45-6789
@@ -256,7 +256,7 @@ describe('Content Scanner Integration', () => {
       };
 
       const content = `
-        api_key=sk_live_1234567890abcdefghijklmnopqrstuvwxyz
+        api_key=sk_test_FAKE_1234567890abcdefghijklmnopqrstuvwxyz
         api_token=token_abcdefghijklmnopqrstuvwxyz1234567890
         secret=secret_value_1234567890abcdefghijklmnopqrst
         password=P@ssw0rd123456
