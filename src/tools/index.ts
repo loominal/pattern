@@ -16,6 +16,8 @@ export * from './forget.js';
 export * from './share-learning.js';
 export * from './cleanup.js';
 export * from './recall-context.js';
+export * from './export-memories.js';
+export * from './import-memories.js';
 
 // Import handlers for dispatcher
 import { remember, type RememberInput } from './remember.js';
@@ -27,6 +29,8 @@ import { forget, type ForgetInput } from './forget.js';
 import { shareLearning, type ShareLearningInput } from './share-learning.js';
 import { cleanup, type CleanupInput } from './cleanup.js';
 import { recallContext, type RecallContextInput } from './recall-context.js';
+import { exportMemories, type ExportMemoriesInput } from './export-memories.js';
+import { importMemories, type ImportMemoriesInput } from './import-memories.js';
 
 /**
  * MCP Tool definitions following the MCP specification
@@ -313,6 +317,61 @@ export const TOOL_DEFINITIONS: Tool[] = [
       },
     },
   },
+  {
+    name: 'export-memories',
+    description:
+      'Export memories to a JSON file for backup or transfer. Supports filtering by scope, category, and date range.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        outputPath: {
+          type: 'string',
+          description: 'Optional file path for export (default: memories-backup-TIMESTAMP.json)',
+        },
+        scope: {
+          type: 'string',
+          enum: ['private', 'personal', 'team', 'public'],
+          description: 'Filter by scope',
+        },
+        category: {
+          type: 'string',
+          enum: ['recent', 'tasks', 'longterm', 'core', 'decisions', 'architecture', 'learnings'],
+          description: 'Filter by category',
+        },
+        since: {
+          type: 'string',
+          description: 'ISO 8601 timestamp - only export memories updated after this date',
+        },
+        includeExpired: {
+          type: 'boolean',
+          description: 'Include expired memories (default: false)',
+        },
+      },
+    },
+  },
+  {
+    name: 'import-memories',
+    description:
+      'Import memories from a JSON backup file. Validates format and allows overwriting existing memories.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        inputPath: {
+          type: 'string',
+          description: 'Path to JSON backup file',
+        },
+        overwriteExisting: {
+          type: 'boolean',
+          description: 'Overwrite if memory ID already exists (default: false)',
+        },
+        skipInvalid: {
+          type: 'boolean',
+          description: 'Skip invalid entries instead of failing (default: true)',
+        },
+      },
+      required: ['inputPath'],
+    },
+  },
 ];
 
 /**
@@ -391,6 +450,12 @@ export async function handleToolCall(
 
     case 'cleanup':
       return cleanup(args as unknown as CleanupInput, storage, projectId);
+
+    case 'export-memories':
+      return exportMemories(args as unknown as ExportMemoriesInput, storage, projectId, agentId);
+
+    case 'import-memories':
+      return importMemories(args as unknown as ImportMemoriesInput, storage, projectId, agentId);
 
     default:
       throw new Error(`Unknown tool: ${name}`);

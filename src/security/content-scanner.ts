@@ -41,7 +41,7 @@ const DETECTION_PATTERNS: DetectionPattern[] = [
   // API Keys and Tokens
   {
     type: 'api-key',
-    regex: /(?:api[_-]?key|apikey|api[_-]?token)\s*[:=]\s*['"]?([a-zA-Z0-9_\-]{20,})/gi,
+    regex: /(?:api[_-]?key|apikey|api[_-]?token)\s*[:=]\s*['"]?([a-zA-Z0-9_-]{20,})/gi,
     description: 'API key detected',
   },
   {
@@ -61,7 +61,7 @@ const DETECTION_PATTERNS: DetectionPattern[] = [
   },
   {
     type: 'generic-secret',
-    regex: /(?:secret|token|bearer)\s*[:=]\s*['"]?([a-zA-Z0-9_\-]{20,})/gi,
+    regex: /(?:secret|token|bearer)\s*[:=]\s*['"]?([a-zA-Z0-9_-]{20,})/gi,
     description: 'Generic secret detected',
   },
 

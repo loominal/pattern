@@ -5,7 +5,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ContentScanner,
-  type ScanResult,
   type ScannerConfig,
   getDefaultScanner,
   configureScanner,

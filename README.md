@@ -261,6 +261,73 @@ Run maintenance tasks to expire TTL memories and enforce limits.
 }
 ```
 
+### `export-memories`
+
+Export memories to a JSON file for backup or transfer. Supports filtering by scope, category, and date range.
+
+```json
+{
+  "outputPath": "/path/to/backup.json",  // Optional, defaults to memories-backup-TIMESTAMP.json
+  "scope": "private",                    // Optional: "private" | "personal" | "team" | "public"
+  "category": "longterm",                 // Optional: filter by category
+  "since": "2025-01-01T00:00:00Z",       // Optional: only export memories updated after this
+  "includeExpired": false                 // Optional: include expired memories (default: false)
+}
+```
+
+Returns:
+```json
+{
+  "exported": 42,
+  "filepath": "/absolute/path/to/backup.json",
+  "bytes": 8192
+}
+```
+
+**Use Cases**:
+- Create backups before making major changes
+- Export specific categories for sharing or archival
+- Transfer memories between agents or projects
+- Export recent changes using the `since` parameter
+
+**Security Note**: Exported files are unencrypted JSON. Store backups securely and review contents before sharing. Never commit backup files with sensitive information to version control.
+
+### `import-memories`
+
+Import memories from a JSON backup file created by `export-memories`.
+
+```json
+{
+  "inputPath": "/path/to/backup.json",   // Required: path to backup file
+  "overwriteExisting": false,             // Optional: overwrite if memory ID exists (default: false)
+  "skipInvalid": true                     // Optional: skip invalid entries instead of failing (default: true)
+}
+```
+
+Returns:
+```json
+{
+  "imported": 40,
+  "skipped": 2,
+  "errors": [
+    "Memory mem-123 already exists (use overwriteExisting to replace)",
+    "Invalid memory structure: mem-456"
+  ]
+}
+```
+
+**Validation**:
+- Checks JSON format and export version
+- Validates memory structure and required fields
+- Validates scope/category combinations
+- Checks for duplicate memory IDs (unless `overwriteExisting` is true)
+
+**Error Handling**:
+- With `skipInvalid: true` (default): Continues importing valid memories, reports errors
+- With `skipInvalid: false`: Stops on first error and throws exception
+
+**Security Note**: Import validates data but trusts the source file. Only import from trusted sources. Review the backup file contents before importing, especially when restoring from external sources.
+
 ### `pattern_health`
 
 Check server health and connection status.
